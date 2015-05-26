@@ -59,4 +59,13 @@ app.use(function(err, req, res, next) {
 });
 
 
+var Firebase = require("firebase");
+Firebase.enableLogging(true);
+
+var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/")
+hnFirebase.child("newstories").on("child_changed", function(snapshot) {
+  console.log("child_changed: " + snapshot);
+});
+
+
 module.exports = app;
