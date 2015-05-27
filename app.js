@@ -6,6 +6,7 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var _ = require('underscore');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -60,12 +61,23 @@ app.use(function(err, req, res, next) {
 
 
 var Firebase = require("firebase");
-Firebase.enableLogging(true);
+// Firebase.enableLogging(true);
 
 var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/")
-hnFirebase.child("newstories").on("child_changed", function(snapshot) {
-  console.log("child_changed: " + snapshot);
+var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com")
+
+hnFirebase.child("newstories").on("value", function(snapshot) {
+    _.each(snapshot.val(), function(idx) {
+        console.log("new id: " + idx);
+        hnFirebase.child("item/" + idx).once("value", function(itemSnapshot) {
+            story = itemSnapshot.val();
+            var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + idx;
+            console.log("new story " + item_location);
+            firebase.child(item_location).set(story);
+        });
+    });
 });
+
 
 
 module.exports = app;
