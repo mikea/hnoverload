@@ -69,9 +69,12 @@ var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
 
 function incError(storyId) {
   firebase.child("errors/" + storyId).transaction(function (currentValue) {
-    currentValue = currentValue || 0;
-    return currentValue + 1;
+    return (currentValue || 0) + 1;
   });
+}
+
+function clearError(storyId) {
+  firebase.child("errors/" + storyId).remove();
 }
 
 function updateStory(storyId) {
@@ -100,6 +103,7 @@ function updateStory(storyId) {
 
       var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
       firebase.child(item_location).set(story);
+      clearError(storyId);
 
       // bump max item id  
       firebase.child("maxitem").transaction(function (currentValue) {
