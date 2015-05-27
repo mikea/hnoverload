@@ -66,19 +66,31 @@ var Firebase = require("firebase");
 var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/")
 var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com")
 
+function updateStory(storyId) {
+  hnFirebase.child("item/" + storyId).once("value", function(itemSnapshot) {
+      console.log("updating story " + storyId);
+
+      story = itemSnapshot.val();
+      if (!story) {
+        console.log("Null story. Scheduling retry: " + storyId);
+        setTimeout(updateStory, 10000, storyId);
+        return;
+      }
+      if (!_.has(story, "time")) {
+        console.log("Time is not defined: %j", story);
+        setTimeout(updateStory, 10009, storyId);
+        return;
+      }
+
+      var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
+      firebase.child(item_location).set(story);
+  });
+}
+
 hnFirebase.child("newstories").on("value", function(snapshot) {
     _.each(snapshot.val(), function(idx) {
         console.log("new id: " + idx);
-        hnFirebase.child("item/" + idx).once("value", function(itemSnapshot) {
-            story = itemSnapshot.val();
-            if (!_.has(story, "time")) {
-              console.log("Time is not defined: %j", story);
-            }
-
-            var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + idx;
-            console.log("new story " + item_location);
-            firebase.child(item_location).set(story);
-        });
+        setTimeout(updateStory, 1000, idx);
     });
 });
 
