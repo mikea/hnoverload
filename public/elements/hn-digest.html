@@ -1,0 +1,30 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
+
+<dom-module id="hn-digest">
+  <template>
+    <span>I'm <b>hn-digest</b>. This is my Shadow DOM.</span>
+    <textarea value="{{resp}}"></textarea>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is: "hn-digest",
+
+    properties: {
+      resp: String
+    },
+
+    created: function() {
+      var self = this;
+      console.log(this.localName + '#' + this.id + ' was created');
+
+      var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
+      firebase.child("story_by_date").on("value", function(snapshot) {
+        self.resp = snapshot.val();
+        console.log("** data", snapshot.val());
+      });
+    },
+  });
+</script>
