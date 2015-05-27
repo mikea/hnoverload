@@ -64,9 +64,10 @@ app.use(function(err, req, res, next) {
 var RxFirebase = function(firebase) {
   this.fb = firebase;
 };
+
 RxFirebase.prototype.child = function(path) {
   return new RxFirebase(this.fb.child(path));
-}
+};
 
 RxFirebase.prototype.once = function(eventType) {
   var self = this;
@@ -76,9 +77,9 @@ RxFirebase.prototype.once = function(eventType) {
       eventType, 
       function(data) { observer.onNext(data); observer.onCompleted(); },
       function(error) { observer.onError(error); }
-    )  
+    );  
   });
-}
+};
 
 var Firebase = require("firebase");
 // Firebase.enableLogging(true);
@@ -151,8 +152,11 @@ function updateStory(storyId) {
         
         return true;
       })
-      .flatMap(function (errorCount) { return rxhnfb.child("item/" + storyId).once("value"); })
-      .doOnError(logError)
+      .flatMap(function (errorCount) { 
+        return rxhnfb.child("item/" + storyId).once("value"); 
+      })
+      .doOnError(function (err) { console.log("@@@@@@@@@@ " + storyId + " " + err); })
+      .onErrorResumeNext(Rx.Observable.empty())
       .subscribeOnNext(function (itemSnapshot) { 
         _updateStory(itemSnapshot);
       });
@@ -165,7 +169,8 @@ function watchNewStories(minStoryId) {
     var maxId = snapshot.val();
     console.log("new maxvalue: " + maxId);
     for (var i = lastStoryId + 1; i <= maxId; i++) {
-      updateStory(i);
+      setTimeout(updateStory, 10000, i);
+      // updateStory(i);
     }
     lastStoryId = maxId;
   });
@@ -175,6 +180,6 @@ function watchNewStories(minStoryId) {
 rxfb.child("maxitem").once("value")
   .map(function (snapshot) { return snapshot.val() || 9600000;})
   .doOnError(logError)
-  .subscribeOnNext(function(maxid) {watchNewStories(maxid); })
+  .subscribeOnNext(function(maxid) {watchNewStories(maxid); });
 
 module.exports = app;
