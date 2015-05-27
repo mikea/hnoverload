@@ -71,6 +71,10 @@ hnFirebase.child("newstories").on("value", function(snapshot) {
         console.log("new id: " + idx);
         hnFirebase.child("item/" + idx).once("value", function(itemSnapshot) {
             story = itemSnapshot.val();
+            if (!_.has(story, "time")) {
+              console.log("Time is not defined: %j", story);
+            }
+
             var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + idx;
             console.log("new story " + item_location);
             firebase.child(item_location).set(story);
