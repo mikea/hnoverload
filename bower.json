@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "underscore": "~1.8.3",
     "polymer": "polymer/polymer#^0.9.0",
     "firebase": "^2.2.0",
-    "iron-elements": "PolymerElements/iron-elements#~0.9.1"
+    "iron-elements": "PolymerElements/iron-elements#~0.9.1",
+    "rxjs": "~2.5.2"
   }
 }

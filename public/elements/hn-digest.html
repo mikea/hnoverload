@@ -3,8 +3,15 @@
 
 <dom-module id="hn-digest">
   <template>
-    <span>I'm <b>hn-digest</b>. This is my Shadow DOM.</span>
-    <textarea value="{{resp}}"></textarea>
+    <h3>{{date}}</h3>
+    <table>
+      <template is="dom-repeat" items="{{stories}}">
+        <tr>
+          <td>{{item.score}}</td>
+          <td>{{item.title}}</td>
+        </tr>
+      </template>
+    </table>
   </template>
 </dom-module>
 
@@ -13,7 +20,8 @@
     is: "hn-digest",
 
     properties: {
-      resp: String
+      stories: Array,
+      date: String
     },
 
     created: function() {
@@ -21,9 +29,17 @@
       console.log(this.localName + '#' + this.id + ' was created');
 
       var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
-      firebase.child("story_by_date").on("value", function(snapshot) {
-        self.resp = snapshot.val();
-        console.log("** data", snapshot.val());
+      var today = new Date().toISOString().substring(0, 10);
+      
+      
+      firebase.child("story_by_date/" + today).on("value", function(snapshot) {
+        var storiesMap = snapshot.val();
+        var storiesArray = Object.keys(storiesMap).map(function (key) { return storiesMap[key]; });
+        storiesArray = _.sortBy(storiesArray, function(story) { return -story.score; });
+        storiesArray = _.first(storiesArray, 10);
+        console.log("** data", storiesArray);
+        self.stories =  storiesArray;
+        self.date = today;
       });
     },
   });
