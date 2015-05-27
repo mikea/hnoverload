@@ -61,7 +61,7 @@ app.use(function(err, req, res, next) {
 
 
 var Firebase = require("firebase");
-// Firebase.enableLogging(true);
+Firebase.enableLogging(true);
 
 var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/")
 var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com")
