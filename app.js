@@ -64,37 +64,60 @@ app.use(function(err, req, res, next) {
 var Firebase = require("firebase");
 // Firebase.enableLogging(true);
 
-var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/")
-var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com")
+var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/");
+var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
 
 function updateStory(storyId) {
   hnFirebase.child("item/" + storyId).once("value", function(itemSnapshot) {
-      console.log("updating story " + storyId);
-
-      story = itemSnapshot.val();
+      var story = itemSnapshot.val();
       if (!story) {
-        console.log("Null story. Scheduling retry: " + storyId);
+        console.log("null story, scheduling retry: " + storyId);
         setTimeout(updateStory, 10000, storyId);
         return;
       }
-      if (!_.has(story, "time")) {
-        console.log("Time is not defined: %j", story);
-        setTimeout(updateStory, 10009, storyId);
+
+      if (_.has(story, "parent")) {
+        console.log("child story: " + storyId);
         return;
       }
 
+      if (!_.has(story, "time")) {
+        console.log("time is not defined: %j", story);
+        // setTimeout(updateStory, 10000, storyId);
+        return;
+      }
+
+      console.log("updating story " + storyId);
+
       var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
       firebase.child(item_location).set(story);
+
+      // bump max item id  
+      firebase.child("maxitem").transaction(function (currentValue) {
+        currentValue = currentValue || storyId;
+        return currentValue < storyId ? storyId : currentValue;
+      });
   });
 }
 
-hnFirebase.child("newstories").on("value", function(snapshot) {
-    _.each(snapshot.val(), function(idx) {
-        console.log("new id: " + idx);
-        setTimeout(updateStory, 1000, idx);
-    });
+function watchNewStories(minStoryId) {
+  var lastStoryId = minStoryId;
+  
+  hnFirebase.child("maxitem").on("value", function(snapshot) {
+    var maxId = snapshot.val();
+    console.log("new maxvalue: " + maxId);
+    for (var i = lastStoryId + 1; i <= maxId; i++) {
+      updateStory(i);
+    }
+    lastStoryId = maxId;
+  });
+}
+
+
+firebase.child("maxitem").once("value", function(snapshot) {
+  var startId = snapshot.val() || 9600000;
+  console.log("*** watching for items since id: " + startId);
+  watchNewStories(startId);
 });
-
-
 
 module.exports = app;
