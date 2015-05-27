@@ -67,11 +67,19 @@ var Firebase = require("firebase");
 var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/");
 var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
 
+function incError(storyId) {
+  firebase.child("errors/" + storyId).transaction(function (currentValue) {
+    currentValue = currentValue || 0;
+    return currentValue + 1;
+  });
+}
+
 function updateStory(storyId) {
   hnFirebase.child("item/" + storyId).once("value", function(itemSnapshot) {
       var story = itemSnapshot.val();
       if (!story) {
         console.log("null story, scheduling retry: " + storyId);
+        incError(storyId);
         setTimeout(updateStory, 10000, storyId);
         return;
       }
@@ -82,6 +90,7 @@ function updateStory(storyId) {
       }
 
       if (!_.has(story, "time")) {
+        incError(storyId);
         console.log("time is not defined: %j", story);
         // setTimeout(updateStory, 10000, storyId);
         return;
