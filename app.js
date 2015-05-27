@@ -7,6 +7,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
+var Rx = require('rx');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -60,12 +61,37 @@ app.use(function(err, req, res, next) {
   });
 });
 
+var RxFirebase = function(firebase) {
+  this.fb = firebase;
+};
+RxFirebase.prototype.child = function(path) {
+  return new RxFirebase(this.fb.child(path));
+}
+
+RxFirebase.prototype.once = function(eventType) {
+  var self = this;
+  
+  return Rx.Observable.create(function (observer) {
+    self.fb.once(
+      eventType, 
+      function(data) { observer.onNext(data); observer.onCompleted(); },
+      function(error) { observer.onError(error); }
+    )  
+  });
+}
 
 var Firebase = require("firebase");
 // Firebase.enableLogging(true);
 
 var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/");
+var rxhnfb = new RxFirebase(hnFirebase);
+
 var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
+var rxfb = new RxFirebase(firebase);
+
+function logError(error) {
+  console.log("*** UNHANDLED ERROR", error);
+}
 
 function incError(storyId) {
   firebase.child("errors/" + storyId).transaction(function (currentValue) {
@@ -77,41 +103,59 @@ function clearError(storyId) {
   firebase.child("errors/" + storyId).remove();
 }
 
+
 function updateStory(storyId) {
-  hnFirebase.child("item/" + storyId).once("value", function(itemSnapshot) {
-      var story = itemSnapshot.val();
-      if (!story) {
-        console.log("null story, scheduling retry: " + storyId);
-        incError(storyId);
-        setTimeout(updateStory, 10000, storyId);
-        return;
-      }
+  function _updateStory(itemSnapshot) {
+        var story = itemSnapshot.val();
+        if (!story) {
+          console.log("null story, scheduling retry: " + storyId);
+          incError(storyId);
+          setTimeout(updateStory, 10000, storyId);
+          return;
+        }
+  
+        if (!_.has(story, "time")) {
+          incError(storyId);
+          console.log("time is not defined: %j", story);
+          // setTimeout(updateStory, 10000, storyId);
+          return;
+        }
+  
+        clearError(storyId);
+  
+        if (_.has(story, "parent")) {
+          console.log("ignoring child story: " + storyId);
+          return;
+        }
+  
+        console.log("updating story " + storyId);
+  
+        var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
+        firebase.child(item_location).set(story);
+  
+        // bump max item id  
+        firebase.child("maxitem").transaction(function (currentValue) {
+          currentValue = currentValue || storyId;
+          return currentValue < storyId ? storyId : currentValue;
+        });
+  }
 
-      if (!_.has(story, "time")) {
-        incError(storyId);
-        console.log("time is not defined: %j", story);
-        // setTimeout(updateStory, 10000, storyId);
-        return;
-      }
-
-      clearError(storyId);
-
-      if (_.has(story, "parent")) {
-        console.log("child story: " + storyId);
-        return;
-      }
-
-      console.log("updating story " + storyId);
-
-      var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
-      firebase.child(item_location).set(story);
-
-      // bump max item id  
-      firebase.child("maxitem").transaction(function (currentValue) {
-        currentValue = currentValue || storyId;
-        return currentValue < storyId ? storyId : currentValue;
+  rxfb.child("errors/" + storyId)
+      .once("value")
+      .map(function(snapshot) { return snapshot.val() || 0;})
+      .filter(function (errorCount) {
+        if (errorCount >= 10) {
+          console.log("abandoning story, too many errors: " + storyId); 
+          return false;
+        } 
+        
+        return true;
+      })
+      .flatMap(function (errorCount) { return rxhnfb.child("item/" + storyId).once("value"); })
+      .doOnError(logError)
+      .subscribeOnNext(function (itemSnapshot) { 
+        _updateStory(itemSnapshot);
       });
-  });
 }
 
 function watchNewStories(minStoryId) {
@@ -128,10 +172,9 @@ function watchNewStories(minStoryId) {
 }
 
 
-firebase.child("maxitem").once("value", function(snapshot) {
-  var startId = snapshot.val() || 9600000;
-  console.log("*** watching for items since id: " + startId);
-  watchNewStories(startId);
-});
+rxfb.child("maxitem").once("value")
+  .map(function (snapshot) { return snapshot.val() || 9600000;})
+  .doOnError(logError)
+  .subscribeOnNext(function(maxid) {watchNewStories(maxid); })
 
 module.exports = app;
