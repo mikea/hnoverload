@@ -87,11 +87,6 @@ function updateStory(storyId) {
         return;
       }
 
-      if (_.has(story, "parent")) {
-        console.log("child story: " + storyId);
-        return;
-      }
-
       if (!_.has(story, "time")) {
         incError(storyId);
         console.log("time is not defined: %j", story);
@@ -99,11 +94,17 @@ function updateStory(storyId) {
         return;
       }
 
+      clearError(storyId);
+
+      if (_.has(story, "parent")) {
+        console.log("child story: " + storyId);
+        return;
+      }
+
       console.log("updating story " + storyId);
 
       var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
       firebase.child(item_location).set(story);
-      clearError(storyId);
 
       // bump max item id  
       firebase.child("maxitem").transaction(function (currentValue) {
