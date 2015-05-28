@@ -165,6 +165,23 @@ function watchNewStories(minStoryId) {
   });
 }
 
+function updateDate(date) {
+  console.log("*** updating stories for " + date);
+  firebase.child("story_by_date/" + date).once("value", function(snapshot) {
+    Object.keys(snapshot.val()).forEach(function(storyId) {
+      updateStory(storyId);
+    });
+  });
+}
+
+function every15min() {
+  console.log("*** every15min");
+  var today = new Date().toISOString().substring(0, 10);
+  updateDate(today);
+}
+
+setInterval(every15min, 1000 * 60 * 15);
+every15min()
 
 rxfb.child("maxitem").once("value")
   .map(function (snapshot) { return snapshot.val() || 9600000;})
