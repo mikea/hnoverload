@@ -8,7 +8,9 @@
       <template is="dom-repeat" items="{{stories}}">
         <tr>
           <td>{{item.score}}</td>
-          <td>{{item.title}}</td>
+          <td><a href="{{storyUrl(item.id)}}">{{item.descendants}}</a></td>
+          <td>{{item.by}}</td>
+          <td><a href="{{item.url}}">{{item.title}}</a></td>
         </tr>
       </template>
     </table>
@@ -42,5 +44,10 @@
         self.date = today;
       });
     },
+    
+    storyUrl: function(storyId) {
+      return "https://news.ycombinator.com/item?id=" + storyId;
+    }
+
   });
 </script>
