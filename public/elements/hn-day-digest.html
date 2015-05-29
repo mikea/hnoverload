@@ -34,8 +34,6 @@
     
 
     created: function() {
-      console.log(this.localName + '#' + this.id + ' was created');
-
       this.disposable = null;
       this.firebase = new RxFirebase(new Firebase("https://sweltering-heat-9449.firebaseio.com"));
     },
@@ -51,13 +49,11 @@
           .child("story_by_date/" + this.date)
           .on("value")
           .forEach(function (snapshot) { 
-            console.log("snapshot", snapshot); 
             var storiesMap = snapshot.val();
             if (!storiesMap) {
               return;
             }
-            console.log("storiesMap " + storiesMap);
-            var storiesArray = _.chain(storiesMap)
+            self.stories = _.chain(storiesMap)
                 .keys()
                 .map(function (key) { return storiesMap[key]; })
                 .filter(function (story) { return !story.deleted; })
@@ -65,9 +61,6 @@
                 .sortBy(function(story) { return -story.score; })
                 .first(10)
                 .value();
-                
-            console.log("** data", storiesArray);
-            self.stories =  storiesArray;
           });
     },
     
