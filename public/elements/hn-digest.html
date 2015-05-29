@@ -1,8 +1,13 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="/bower_components/firebase-element/firebase-collection.html">
 
 <dom-module id="hn-digest">
   <template>
+    <firebase-collection 
+      location="https://sweltering-heat-9449.firebaseio.com/story_by_date"
+      data="{{days}}"
+      order-by-key="true"></firebase-collection>
     <h3>{{date}}</h3>
     <table>
       <template is="dom-repeat" items="{{stories}}">
@@ -14,6 +19,12 @@
         </tr>
       </template>
     </table>
+    
+    <template is="dom-repeat" items="[[days]]" as="day">
+      <p>Day</p>
+      <p>{{day}}</p>
+    </template>
+
   </template>
 </dom-module>
 
@@ -23,8 +34,15 @@
 
     properties: {
       stories: Array,
-      date: String
+      date: String,
+      days: {
+        type: Array,
+        value: function() {
+          return [];
+        }
+      }
     },
+    
 
     created: function() {
       var self = this;
@@ -36,6 +54,10 @@
       
       firebase.child("story_by_date/" + today).on("value", function(snapshot) {
         var storiesMap = snapshot.val();
+        if (!storiesMap) {
+          return;
+        }
+        
         var storiesArray = Object.keys(storiesMap).map(function (key) { return storiesMap[key]; });
         storiesArray = _.sortBy(storiesArray, function(story) { return -story.score; });
         storiesArray = _.first(storiesArray, 10);
