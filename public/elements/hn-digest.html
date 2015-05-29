@@ -57,7 +57,7 @@
         if (!storiesMap) {
           return;
         }
-        
+        console.log("storiesMap " + storiesMap);
         var storiesArray = Object.keys(storiesMap).map(function (key) { return storiesMap[key]; });
         storiesArray = _.sortBy(storiesArray, function(story) { return -story.score; });
         storiesArray = _.first(storiesArray, 10);
