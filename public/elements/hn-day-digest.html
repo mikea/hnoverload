@@ -12,7 +12,7 @@
           <paper-item>
             <paper-item-body two-line>
               <div><span>{{item.score}}</span>&nbsp<a href="{{item.url}}">{{item.title}}</a></div>
-              <div secondary><span>by <span>{{item.by}}</span>&nbsp;|&nbsp;</span><span><a href="{{storyUrl(item.id)}}"><span>{{item.descendants}}</span>&nbsp;comments</span></div>
+              <div secondary><span>by <a href="{{userUrl(item.by)}}">{{item.by}}</a>&nbsp;|&nbsp;</span><span><a href="{{storyUrl(item.id)}}"><span>{{item.descendants}}</span>&nbsp;comments</span></div>
             </paper-item-body>
           </paper-item>
         </template>
@@ -66,6 +66,10 @@
     
     storyUrl: function(storyId) {
       return "https://news.ycombinator.com/item?id=" + storyId;
+    },
+
+    userUrl: function(userId) {
+      return "https://news.ycombinator.com/user?id=" + userId;
     }
 
   });
