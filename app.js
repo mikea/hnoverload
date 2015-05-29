@@ -95,14 +95,21 @@ function updateStory(storyId) {
   
         clearError(storyId);
   
+        var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
+
         if (_.has(story, "parent")) {
           console.log("ignoring child story: " + storyId);
           return;
         }
   
+        if (_.has(story, "deleted") && story.deleted) {
+          console.log("deleting deleted story: " + storyId);
+          firebase.child(item_location).remove();
+          return;
+        }
+
         console.log("updating story " + storyId);
   
-        var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
         firebase.child(item_location).set(story);
   
         // bump max item id  
@@ -141,7 +148,6 @@ function watchNewStories(minStoryId) {
     console.log("new maxvalue: " + maxId);
     for (var i = lastStoryId + 1; i <= maxId; i++) {
       setTimeout(updateStory, 10000, i);
-      // updateStory(i);
     }
     lastStoryId = maxId;
   });
@@ -153,25 +159,43 @@ function updateDate(date) {
     if (!snapshot.val()) {
       return;
     }
-    Object.keys(snapshot.val()).forEach(function(storyId) {
-      updateStory(storyId);
-    });
+    Object.keys(snapshot.val()).forEach(updateStory);
   });
+}
+
+function updateDateRange(from, to) {
+  var d = new Date();
+  d.setHours(0, 0, 0);
+  
+  for (var i = 0; i < to; i++, d.setDate(d.getDate() - 1)) {
+    if (i >= from) {
+      updateDate(d.toISOString().substring(0, 10));
+    }
+  }
 }
 
 function every15min() {
   console.log("*** every15min");
-  var today = new Date().toISOString().substring(0, 10);
-  updateDate(today);
+  updateDateRange(0, 1);
+}
+
+function every1hr() {
+  console.log("*** every1hr");
+  updateDateRange(1, 7);
 }
 
 setInterval(every15min, 1000 * 60 * 15);
-every15min()
+every15min();
+setInterval(every1hr, 1000 * 60 * 60);
 
 rxfb.child("maxitem")
     .once("value")
     .map(function (snapshot) { return snapshot.val() || 9600000;})
     .doOnError(logError)
     .subscribeOnNext(function(maxid) {watchNewStories(maxid); });
+
+// for (var i = 9600000; i > 9600000 - 20000; i--) {
+//   updateStory(i);
+// }
 
 module.exports = app;
