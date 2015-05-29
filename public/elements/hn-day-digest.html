@@ -1,0 +1,77 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="/bower_components/firebase-element/firebase-collection.html">
+
+<dom-module id="hn-day-digest">
+  <template>
+    <h3>{{date}}</h3>
+    <table>
+      <template is="dom-repeat" items="{{stories}}">
+        <tr>
+          <td>{{item.score}}</td>
+          <td><a href="{{storyUrl(item.id)}}">{{item.descendants}}</a></td>
+          <td>{{item.by}}</td>
+          <td><a href="{{item.url}}">{{item.title}}</a></td>
+        </tr>
+      </template>
+    </table>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is: "hn-day-digest",
+
+    properties: {
+      stories: Array,
+      date: {
+        type: String,
+        observer: "dateChanged"
+      }
+    },
+    
+
+    created: function() {
+      console.log(this.localName + '#' + this.id + ' was created');
+
+      this.disposable = null;
+      this.firebase = new RxFirebase(new Firebase("https://sweltering-heat-9449.firebaseio.com"));
+    },
+    
+    dateChanged: function() {
+      if (this.disposable) {
+        this.disposable.dispose();
+        this.disposable = null;
+}
+
+      var self = this;
+      this.disposable = this.firebase
+          .child("story_by_date/" + this.date)
+          .on("value")
+          .forEach(function (snapshot) { 
+            console.log("snapshot", snapshot); 
+            var storiesMap = snapshot.val();
+            if (!storiesMap) {
+              return;
+            }
+            console.log("storiesMap " + storiesMap);
+            var storiesArray = _.chain(storiesMap)
+                .keys()
+                .map(function (key) { return storiesMap[key]; })
+                .filter(function (story) { return !story.deleted; })
+                .toArray()
+                .sortBy(function(story) { return -story.score; })
+                .first(10)
+                .value();
+                
+            console.log("** data", storiesArray);
+            self.stories =  storiesArray;
+          });
+    },
+    
+    storyUrl: function(storyId) {
+      return "https://news.ycombinator.com/item?id=" + storyId;
+    }
+
+  });
+</script>

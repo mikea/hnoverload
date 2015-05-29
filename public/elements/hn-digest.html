@@ -1,30 +1,11 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
-<link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
-<link rel="import" href="/bower_components/firebase-element/firebase-collection.html">
+<link rel="import" href="hn-day-digest.html">
 
 <dom-module id="hn-digest">
   <template>
-    <firebase-collection 
-      location="https://sweltering-heat-9449.firebaseio.com/story_by_date"
-      data="{{days}}"
-      order-by-key="true"></firebase-collection>
-    <h3>{{date}}</h3>
-    <table>
-      <template is="dom-repeat" items="{{stories}}">
-        <tr>
-          <td>{{item.score}}</td>
-          <td><a href="{{storyUrl(item.id)}}">{{item.descendants}}</a></td>
-          <td>{{item.by}}</td>
-          <td><a href="{{item.url}}">{{item.title}}</a></td>
-        </tr>
-      </template>
-    </table>
-    
-    <template is="dom-repeat" items="[[days]]" as="day">
-      <p>Day</p>
-      <p>{{day}}</p>
+    <template is="dom-repeat" items="{{days}}" as="day">
+      <hn-day-digest date="[[day]]"></hn-day-digest>
     </template>
-
   </template>
 </dom-module>
 
@@ -34,37 +15,22 @@
 
     properties: {
       stories: Array,
-      date: String,
+      
       days: {
         type: Array,
+        notify: true,
         value: function() {
-          return [];
+          var today = new Date();
+          today.setHours(0, 0, 0);
+          
+          var result = [];
+          for (var i = 0, d = new Date(today); i < 7; i++, d.setDate(d.getDate() - 1)) {
+            result.push(d.toISOString().substring(0, 10));
+          }
+        
+          return result;
         }
       }
-    },
-    
-
-    created: function() {
-      var self = this;
-      console.log(this.localName + '#' + this.id + ' was created');
-
-      var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
-      var today = new Date().toISOString().substring(0, 10);
-      
-      
-      firebase.child("story_by_date/" + today).on("value", function(snapshot) {
-        var storiesMap = snapshot.val();
-        if (!storiesMap) {
-          return;
-        }
-        console.log("storiesMap " + storiesMap);
-        var storiesArray = Object.keys(storiesMap).map(function (key) { return storiesMap[key]; });
-        storiesArray = _.sortBy(storiesArray, function(story) { return -story.score; });
-        storiesArray = _.first(storiesArray, 10);
-        console.log("** data", storiesArray);
-        self.stories =  storiesArray;
-        self.date = today;
-      });
     },
     
     storyUrl: function(storyId) {

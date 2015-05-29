@@ -26,6 +26,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/bower_components', express.static(path.join(__dirname, 'bower_components')));
+app.use('/shared', express.static(path.join(__dirname, 'shared')));
 
 // app.use('/', routes);
 app.use('/users', users);
@@ -50,27 +51,8 @@ app.get('/ping', function (req, res) {
 });
 
 
-var RxFirebase = function(firebase) {
-  this.fb = firebase;
-};
-
-RxFirebase.prototype.child = function(path) {
-  return new RxFirebase(this.fb.child(path));
-};
-
-RxFirebase.prototype.once = function(eventType) {
-  var self = this;
-  
-  return Rx.Observable.create(function (observer) {
-    self.fb.once(
-      eventType, 
-      function(data) { observer.onNext(data); observer.onCompleted(); },
-      function(error) { observer.onError(error); }
-    );  
-  });
-};
-
 var Firebase = require("firebase");
+var RxFirebase = require("./shared/rxfirebase");
 // Firebase.enableLogging(true);
 
 var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/");
@@ -186,9 +168,10 @@ function every15min() {
 setInterval(every15min, 1000 * 60 * 15);
 every15min()
 
-rxfb.child("maxitem").once("value")
-  .map(function (snapshot) { return snapshot.val() || 9600000;})
-  .doOnError(logError)
-  .subscribeOnNext(function(maxid) {watchNewStories(maxid); });
+rxfb.child("maxitem")
+    .once("value")
+    .map(function (snapshot) { return snapshot.val() || 9600000;})
+    .doOnError(logError)
+    .subscribeOnNext(function(maxid) {watchNewStories(maxid); });
 
 module.exports = app;
