@@ -21,23 +21,24 @@
       days: {
         type: Array,
         notify: true,
-        value: function() {
-          var today = new Date();
-          today.setHours(0, 0, 0);
-          
-          var result = [];
-          for (var i = 0, d = new Date(today); i < 7; i++, d.setDate(d.getDate() - 1)) {
-            result.push(d.toISOString().substring(0, 10));
-          }
-        
-          return result;
-        }
+        value: function() { return []; }
       }
     },
     
-    storyUrl: function(storyId) {
-      return "https://news.ycombinator.com/item?id=" + storyId;
+    created: function() {
+      var self = this;
+      
+      this.disposable = null;
+      this.firebase = new RxFirebase(new Firebase("https://sweltering-heat-9449.firebaseio.com"));
+      
+      this.firebase
+          .child("dates")
+          .limitToLast(7)
+          .on("value")
+          .map(function(snapshot) {return snapshot.val();})
+          .filter(function(dates) { return dates; })
+          .map(function(dates) { return _.chain(dates).keys().reverse().value(); })
+          .forEach(function(dates) { self.days = dates; });
     }
-
   });
 </script>

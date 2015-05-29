@@ -35,6 +35,10 @@
         });
       });
     };
+    
+    RxFirebase.prototype.limitToLast = function (limit) {
+      return new RxFirebase(this.fb.limitToLast(limit));
+    }
 
     if (isInNode) { module.exports = RxFirebase; } else { window.RxFirebase = RxFirebase; }  
 })(this);

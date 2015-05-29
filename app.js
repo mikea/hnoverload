@@ -155,6 +155,7 @@ function watchNewStories(minStoryId) {
 
 function updateDate(date) {
   console.log("*** updating stories for " + date);
+  firebase.child("dates/" + date).set(true);
   firebase.child("story_by_date/" + date).once("value", function(snapshot) {
     if (!snapshot.val()) {
       return;

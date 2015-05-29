@@ -32,7 +32,6 @@
       }
     },
     
-
     created: function() {
       this.disposable = null;
       this.firebase = new RxFirebase(new Firebase("https://sweltering-heat-9449.firebaseio.com"));
@@ -42,26 +41,27 @@
       if (this.disposable) {
         this.disposable.dispose();
         this.disposable = null;
-}
+      }
 
       var self = this;
       this.disposable = this.firebase
           .child("story_by_date/" + this.date)
           .on("value")
-          .forEach(function (snapshot) { 
+          .map(function (snapshot) { 
             var storiesMap = snapshot.val();
             if (!storiesMap) {
-              return;
+              return [];
             }
-            self.stories = _.chain(storiesMap)
-                .keys()
-                .map(function (key) { return storiesMap[key]; })
-                .filter(function (story) { return !story.deleted; })
-                .toArray()
-                .sortBy(function(story) { return -story.score; })
-                .first(10)
-                .value();
-          });
+            return _.chain(storiesMap)
+                    .keys()
+                    .map(function (key) { return storiesMap[key]; })
+                    .filter(function (story) { return !story.deleted; })
+                    .toArray()
+                    .sortBy(function(story) { return -story.score; })
+                    .first(10)
+                    .value();
+          })
+          .forEach(function (stories) { self.stories = stories; });
     },
     
     storyUrl: function(storyId) {
