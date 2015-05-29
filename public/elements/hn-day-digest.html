@@ -1,20 +1,22 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
-<link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
-<link rel="import" href="/bower_components/firebase-element/firebase-collection.html">
+<link rel="import" href="/bower_components/paper-material/paper-material.html">
+<link rel="import" href="/bower_components/paper-item/paper-item.html">
+<link rel="import" href="/bower_components/paper-item/paper-item-body.html">
 
 <dom-module id="hn-day-digest">
   <template>
-    <h3>{{date}}</h3>
-    <table>
-      <template is="dom-repeat" items="{{stories}}">
-        <tr>
-          <td>{{item.score}}</td>
-          <td><a href="{{storyUrl(item.id)}}">{{item.descendants}}</a></td>
-          <td>{{item.by}}</td>
-          <td><a href="{{item.url}}">{{item.title}}</a></td>
-        </tr>
-      </template>
-    </table>
+    <!--<paper-material>-->
+      <h2>{{date}}</h2>
+      <!--<table>-->
+        <template is="dom-repeat" items="{{stories}}">
+          <paper-item>
+            <paper-item-body two-line>
+              <div><span>{{item.score}}</span>&nbsp<a href="{{item.url}}">{{item.title}}</a></div>
+              <div secondary><span>by <span>{{item.by}}</span>&nbsp;|&nbsp;</span><span><a href="{{storyUrl(item.id)}}"><span>{{item.descendants}}</span>&nbsp;comments</span></div>
+            </paper-item-body>
+          </paper-item>
+        </template>
+    <!--</paper-material>-->
   </template>
 </dom-module>
 
