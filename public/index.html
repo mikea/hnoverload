@@ -14,14 +14,20 @@
     <link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
     <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
     <link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+    
+    <style>
+      #header {
+        max-width: 1024px;
+        flex-grow: 1;
+      }
+    </style>
   </head>
-<body class="fullbleed layout vertical">
-    <paper-header-panel main mode="scroll">
-      <paper-toolbar>
-        <h1>HN Overload</h1>
-      </paper-toolbar>
-      <hn-digest></hn-digest>  
-    </paper-header-panel>
-
+<body class="fullbleed layout horizontal center-justified">
+  <paper-header-panel main mode="scroll" id="header">
+    <paper-toolbar>
+      <h1>HN Overload</h1>
+    </paper-toolbar>
+    <hn-digest></hn-digest>  
+  </paper-header-panel>
 </body>
 </html>

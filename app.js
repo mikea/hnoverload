@@ -53,6 +53,7 @@ app.get('/ping', function (req, res) {
 
 var Firebase = require("firebase");
 var RxFirebase = require("./shared/rxfirebase");
+
 // Firebase.enableLogging(true);
 
 var hnFirebase = new Firebase("https://hacker-news.firebaseio.com/v0/");
@@ -77,8 +78,7 @@ function clearError(storyId) {
 
 
 function updateStory(storyId) {
-  function _updateStory(itemSnapshot) {
-        var story = itemSnapshot.val();
+  function _updateStory(story) {
         if (!story) {
           console.log("null story, scheduling retry: " + storyId);
           incError(storyId);
@@ -130,14 +130,14 @@ function updateStory(storyId) {
         
         return true;
       })
-      .flatMap(function (errorCount) { 
-        return rxhnfb.child("item/" + storyId).once("value"); 
-      })
+      // fetch story
+      .flatMap(function (errorCount) { return rxhnfb.child("item/" + storyId).once("value"); })  
+      // unwrap snapshot
+      .map(function (snapshot) { return snapshot.val(); })
       .doOnError(function (err) { console.log("@@@@@@@@@@ " + storyId + " " + err); })
       .onErrorResumeNext(Rx.Observable.empty())
-      .subscribeOnNext(function (itemSnapshot) { 
-        _updateStory(itemSnapshot);
-      });
+      // update story
+      .subscribeOnNext(function (story) { _updateStory(story); });
 }
 
 function watchNewStories(minStoryId) {
@@ -156,12 +156,12 @@ function watchNewStories(minStoryId) {
 function updateDate(date) {
   console.log("*** updating stories for " + date);
   firebase.child("dates/" + date).set(true);
-  firebase.child("story_by_date/" + date).once("value", function(snapshot) {
-    if (!snapshot.val()) {
-      return;
-    }
-    Object.keys(snapshot.val()).forEach(updateStory);
-  });
+
+  rxfb.child("story_by_date/" + date)
+       .once("value")
+       .filter(function (snapshot) { return snapshot.val(); })
+       .flatMap(function (snapshot) { return Object.keys(snapshot.val())})
+       .forEach(updateStory);
 }
 
 function updateDateRange(from, to) {

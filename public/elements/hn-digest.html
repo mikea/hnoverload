@@ -5,9 +5,11 @@
 
 <dom-module id="hn-digest">
   <template>
-    <template is="dom-repeat" items="{{days}}" as="day">
-      <hn-day-digest date="[[day]]"></hn-day-digest>
-    </template>
+    <div id="digest">
+      <template is="dom-repeat" items="{{days}}" as="day">
+        <hn-day-digest date="[[day]]"></hn-day-digest>
+      </template>
+    </div>
   </template>
 </dom-module>
 

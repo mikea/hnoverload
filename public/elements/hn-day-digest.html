@@ -4,15 +4,41 @@
 <link rel="import" href="/bower_components/paper-item/paper-item-body.html">
 
 <dom-module id="hn-day-digest">
+  <style>
+    .story {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      margin-bottom: 1ex;
+    }
+    
+    .details {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .score {
+      margin: .5em;
+      align-self: center;
+      font-size: 116%;
+    }
+    
+    .secondary {
+      font-size: 70%;
+    }
+  </style>
   <template>
     <!--<paper-material>-->
       <h2>{{date}}</h2>
       <!--<table>-->
         <template is="dom-repeat" items="{{stories}}">
           <paper-item>
-            <paper-item-body two-line>
-              <div><span>{{item.score}}</span>&nbsp<a href="{{item.url}}" target="_blank">{{item.title}}</a></div>
-              <div secondary><span>by <a href="{{userUrl(item.by)}}"target="_blank">{{item.by}}</a>&nbsp;|&nbsp;</span><span><a href="{{storyUrl(item.id)}}" target="_blank"><span>{{item.descendants}}</span>&nbsp;comments</span></div>
+            <paper-item-body class="story">
+              <div class="score"><span>{{item.score}}</span></div>
+              <div class="details">
+                <div><a href="{{item.url}}" target="_blank">{{item.title}}</a></div>
+                <div class="secondary"><span>by <a href="{{userUrl(item.by)}}"target="_blank">{{item.by}}</a>&nbsp;|&nbsp;</span><span><a href="{{storyUrl(item.id)}}" target="_blank"><span>{{item.descendants}}</span>&nbsp;comments</span></div>
+              </div>
             </paper-item-body>
           </paper-item>
         </template>
