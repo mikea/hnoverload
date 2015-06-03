@@ -18,9 +18,14 @@
 
     properties: {
       stories: Array,
+      sorting: {
+        type: String,
+        observer: "refresh"
+      },
+      
       date: {
         type: String,
-        observer: "dateChanged"
+        observer: "refresh"
       }
     },
     
@@ -29,7 +34,8 @@
       this.firebase = new RxFirebase(new Firebase("https://sweltering-heat-9449.firebaseio.com"));
     },
     
-    dateChanged: function() {
+    refresh: function() {
+      console.log("*** refresh", this.sorting);
       if (this.disposable) {
         this.disposable.dispose();
         this.disposable = null;
@@ -44,14 +50,23 @@
             if (!storiesMap) {
               return [];
             }
-            return _.chain(storiesMap)
-                    .keys()
-                    .map(function (key) { return storiesMap[key]; })
-                    .filter(function (story) { return !story.deleted; })
-                    .toArray()
-                    .sortBy(function(story) { return -story.score; })
+            
+            var allStories = _.chain(storiesMap)
+                              .keys()
+                              .map(function (key) { return storiesMap[key]; })
+                              .filter(function (story) { return !story.deleted; })
+                              .toArray()
+                              .value();
+                          
+            var sortingFn = self.sorting == "comments" 
+              ? function(story) { return -(story.descendants || 0); }
+              : function(story) { return -story.score; };
+                              
+            return _.chain(allStories)
+                    .sortBy(sortingFn)
                     .first(10)
-                    .value();
+                    .toArray()
+                    .value();                               
           })
           .forEach(function (stories) { self.stories = stories; });
     }

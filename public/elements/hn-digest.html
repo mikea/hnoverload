@@ -5,9 +5,9 @@
 
 <dom-module id="hn-digest">
   <template>
-    <div id="digest">
+    <div>
       <template is="dom-repeat" items="{{days}}" as="day">
-        <hn-day-digest date="[[day]]"></hn-day-digest>
+        <hn-day-digest date="[[day]]" sorting="[[sorting]]"></hn-day-digest>
       </template>
     </div>
   </template>
@@ -20,6 +20,8 @@
     properties: {
       stories: Array,
       
+      sorting: String,
+      
       days: {
         type: Array,
         notify: true,
@@ -28,19 +30,26 @@
     },
     
     created: function() {
-      var self = this;
-      
       this.disposable = null;
       this.firebase = new RxFirebase(new Firebase("https://sweltering-heat-9449.firebaseio.com"));
-      
-      this.firebase
-          .child("dates")
-          .limitToLast(7)
-          .on("value")
-          .map(function(snapshot) {return snapshot.val();})
-          .filter(function(dates) { return dates; })
-          .map(function(dates) { return _.chain(dates).keys().reverse().value(); })
-          .forEach(function(dates) { self.days = dates; });
+      this.refresh();
+    },
+    
+    refresh: function() {
+      if (this.disposable) {
+        this.disposable.dispose();
+        this.disposable = null;
+      }
+
+      var self = this;
+      this.disposable = this.firebase
+            .child("dates")
+            .limitToLast(7)
+            .on("value")
+            .map(function(snapshot) {return snapshot.val();})
+            .filter(function(dates) { return dates; })
+            .map(function(dates) { return _.chain(dates).keys().reverse().value(); })
+            .forEach(function(dates) { self.days = dates; });
     }
   });
 </script>
