@@ -13,7 +13,6 @@
 <dom-module id="hn-page-index">
     <style>
       #header {
-        /*max-width: 1024px;*/
         flex-grow: 1;
       }
       
@@ -24,12 +23,20 @@
       #content {
         padding-left: 16px;
       }
+      
+      .toggleLabel {
+        font-size: 11px;
+        margin-left: .5ex;
+        margin-right: .5ex;
+      }
     </style>
   <template>
     <paper-header-panel main mode="standard" id="header" class="flex">
         <paper-toolbar>
           <h1 id="title">HN Overload</h1>
-          <div><span>votes</span>&nbsp;<paper-toggle-button checked="{{sortingChecked}}"></paper-toggle-button>&nbsp;<span>comments</span></div>
+          <div class="toggleLabel">votes</div>
+          <paper-toggle-button checked="{{sortingChecked}}"></paper-toggle-button>
+          <div class="toggleLabel">comments</div>
         </paper-toolbar>
         <div id="content">
           <hn-digest sorting="[[sorting]]" id="digest"></hn-digest>    
