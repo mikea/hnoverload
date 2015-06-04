@@ -10,6 +10,8 @@
         this.prefix = prefix;
         this.subject = new Rx.Subject();
         
+        console.info("instrument will use %s url", endpointUrl);
+        
         this.subject
             .bufferWithTimeOrCount(10000, 1000)
             .filter(function (evts) { return evts.length; })
