@@ -53,6 +53,9 @@ app.get('/ping', function (req, res) {
 
 var Firebase = require("firebase");
 var RxFirebase = require("./shared/rxfirebase");
+var Instrument = require("./shared/instrument");
+
+var instrument = new Instrument("/mike/hnoverload", process.env.instrument_url);
 
 // Firebase.enableLogging(true);
 
@@ -78,6 +81,8 @@ function clearError(storyId) {
 
 
 function updateStory(storyId) {
+  instrument.increment("/tasks", {"task": "updateStory"});
+
   function _updateStory(story) {
         if (!story) {
           console.log("null story, scheduling retry: " + storyId);
@@ -87,6 +92,7 @@ function updateStory(storyId) {
         }
   
         if (!_.has(story, "time")) {
+          instrument.increment("/errors", {"error": "story-time-not-defined"});
           incError(storyId);
           console.log("time is not defined: %j", story);
           // setTimeout(updateStory, 10000, storyId);
@@ -98,21 +104,24 @@ function updateStory(storyId) {
         var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
 
         if (_.has(story, "parent")) {
-          console.log("ignoring child story: " + storyId);
+          instrument.increment("/events", {"event": "ignore-child-story"});
+          // console.log("ignoring child story: " + storyId);
           return;
         }
   
         if (_.has(story, "deleted") && story.deleted) {
-          console.log("deleting deleted story: " + storyId);
+          instrument.increment("/events", {"event": "story-deleted"});
+          // console.log("deleting deleted story: " + storyId);
           firebase.child(item_location).remove();
           return;
         }
 
-        console.log("updating story " + storyId);
+        // console.log("updating story " + storyId);
   
         firebase.child(item_location).set(story);
   
         // bump max item id  
+          instrument.increment("/events", {"event": "story-update"});
         firebase.child("maxitem").transaction(function (currentValue) {
           currentValue = currentValue || storyId;
           return currentValue < storyId ? storyId : currentValue;
@@ -124,6 +133,7 @@ function updateStory(storyId) {
       .map(function(snapshot) { return snapshot.val() || 0;})
       .filter(function (errorCount) {
         if (errorCount >= 10) {
+          instrument.increment("/errors", {"error": "story-abandoned-too-many-errors"});
           console.log("abandoning story, too many errors: " + storyId); 
           return false;
         } 
@@ -144,6 +154,7 @@ function watchNewStories(minStoryId) {
   var lastStoryId = minStoryId;
   
   hnFirebase.child("maxitem").on("value", function(snapshot) {
+    instrument.increment("/events", {"event": "maxitem.value"});
     var maxId = snapshot.val();
     console.log("new maxvalue: " + maxId);
     for (var i = lastStoryId + 1; i <= maxId; i++) {
@@ -154,6 +165,7 @@ function watchNewStories(minStoryId) {
 }
 
 function updateDate(date) {
+  instrument.increment("/tasks", {"task": "updateDate"});
   console.log("*** updating stories for " + date);
   firebase.child("dates/" + date).set(true);
 
@@ -176,11 +188,13 @@ function updateDateRange(from, to) {
 }
 
 function every15min() {
+  instrument.increment("/lifecycle", {"event": "cron15m"});
   console.log("*** every15min");
   updateDateRange(0, 1);
 }
 
 function every1hr() {
+  instrument.increment("/lifecycle", {"event": "cron1h"});
   console.log("*** every1hr");
   updateDateRange(1, 7);
 }
@@ -198,5 +212,7 @@ rxfb.child("maxitem")
 // for (var i = 9600000; i > 9600000 - 20000; i--) {
 //   updateStory(i);
 // }
+
+instrument.increment("/lifecycle", {"event": "start"});
 
 module.exports = app;
