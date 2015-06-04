@@ -5,48 +5,44 @@
 
 <dom-module id="hn-story-list">
   <style>
-    .story {
+    #line1, #line2 {
       display: flex;
-      flex-direction: row;
-      justify-content: flex-start;
+    }
+    
+    #story {
       margin-bottom: 1ex;
     }
     
-    .details {
-      display: flex;
-      flex-direction: column;
-    }
-    
     .score {
-      margin-right: .5em;
-      align-self: center;
       font-size: 116%;
       min-width: 3em;
       text-align: right;
-      font-weight: 400;
-      font-family: 'Roboto Condensed', sans-serif;
+      font-weight: 500;
     }
     
-    .secondary {
+    #line2content {
       font-size: 70%;
     }
+    
+    #line2strut {
+      margin-left: 3em;
+    }
+
   </style>
   <template>
     <template is="dom-repeat" items="{{stories}}">
-      <paper-item>
-        <paper-item-body class="story">
-          <div class="score"><span>{{item.score}}</span></div>
-          <div class="details">
-            <div><a href="{{item.url}}" target="_blank">{{item.title}}</a></div>
-            <div class="secondary">
-                <span>by&nbsp;</span>
-                <a href="{{userUrl(item.by)}}" target="_blank">{{item.by}}</a>
-                <span>&nbsp;|&nbsp;</span>
-                <a href="{{storyUrl(item.id)}}" target="__blank"><span>{{item.descendants}}</span><span>&nbsp;comments</span></a>
-            </div>
-          </div>
-        </paper-item-body>
-      </paper-item>
+      <div id="story">
+        <div id="line1">
+            <span class="score">{{item.score}}</span>&ensp;<span><a href="{{item.url}}" target="_blank">{{item.title}}</a></span>
+        </div>
+        <div id="line2">
+          <span class="score">&nbsp;</span>&ensp;<span id="line2content"><span>by&nbsp;</span><!--
+          --><a href="{{userUrl(item.by)}}" target="_blank">{{item.by}}</a><!--
+          --><span>&nbsp;|&nbsp;</span><!--
+          --><a href="{{storyUrl(item.id)}}" target="__blank"><span>{{item.descendants}}</span><span>&nbsp;comments</span></a>
+          </span>
+        </div>
+      </div>
     </template>
   </template>
 </dom-module>

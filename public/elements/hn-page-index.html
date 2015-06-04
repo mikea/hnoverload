@@ -25,18 +25,17 @@
       }
       
       .toggleLabel {
-        font-size: 11px;
-        margin-left: .5ex;
-        margin-right: .5ex;
+        font-family: 'Roboto Condensed';
+        font-weight: 300;
       }
     </style>
   <template>
     <paper-header-panel main mode="standard" id="header" class="flex">
         <paper-toolbar>
           <h1 id="title">HN Overload</h1>
-          <div class="toggleLabel">votes</div>
+          <div class="toggleLabel">votes&ensp;</div>
           <paper-toggle-button checked="{{sortingChecked}}"></paper-toggle-button>
-          <div class="toggleLabel">comments</div>
+          <div class="toggleLabel">&ensp;comments</div>
         </paper-toolbar>
         <div id="content">
           <hn-digest sorting="[[sorting]]" id="digest"></hn-digest>    
