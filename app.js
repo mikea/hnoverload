@@ -144,7 +144,7 @@ function updateStory(storyId) {
       .flatMap(function (errorCount) { return rxhnfb.child("item/" + storyId).once("value"); })  
       // unwrap snapshot
       .map(function (snapshot) { return snapshot.val(); })
-      .doOnError(function (err) { console.log("@@@@@@@@@@ " + storyId + " " + err); })
+      .doOnError(function (err) { instrument.increment("/errors", {"error": "story-unexpected-error"}); })
       .onErrorResumeNext(Rx.Observable.empty())
       // update story
       .subscribeOnNext(function (story) { _updateStory(story); });

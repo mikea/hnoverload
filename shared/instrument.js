@@ -4,6 +4,8 @@
     var isInNode = typeof module === 'object' && module && typeof module.exports === 'object';
     var Rx = isInNode ? require("rx") : window.Rx;
     var request = require('request');
+    // require('request-debug')(request);
+    
     var _ = require('underscore');
 
     var Instrument = function(prefix, endpointUrl) {
@@ -12,12 +14,37 @@
         
         console.info("instrument will use %s url", endpointUrl);
         
+        // request.debug = true;
+        
         this.subject
             .bufferWithTimeOrCount(10000, 1000)
             .filter(function (evts) { return evts.length; })
             .subscribe(function(evts) {
                 if (endpointUrl) {
-                    request.post(endpointUrl, {body: { events: evts}, json: true});
+                    console.log("posting %d events", evts.length);
+                    request.post(
+                        {
+                            url: endpointUrl, 
+                            body: {events: evts}, 
+                            json: true
+                            , headers: {
+                                "Content-Type" : "application/json"
+                            }
+                            
+                        }, 
+                        function (err, response, body) { 
+                        if (err) {
+                            console.error("error posting instrumentation", err);
+                            return;
+                        }
+                        
+                        if (response.statusCode != 200) {
+                            console.error("error posting instrumentation", response.statusCode, body);
+                            return;
+                        }
+
+                        console.log("posted %d events", evts.length);
+                    });
                 }
             })
     };
