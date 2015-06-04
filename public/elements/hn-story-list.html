@@ -18,9 +18,13 @@
     }
     
     .score {
-      margin: .5em;
+      margin-right: .5em;
       align-self: center;
       font-size: 116%;
+      min-width: 3em;
+      text-align: right;
+      font-weight: 400;
+      font-family: "Open Sans";
     }
     
     .secondary {
@@ -34,7 +38,13 @@
           <div class="score"><span>{{item.score}}</span></div>
           <div class="details">
             <div><a href="{{item.url}}" target="_blank">{{item.title}}</a></div>
-            <div class="secondary"><span>by <a href="{{userUrl(item.by)}}"target="_blank">{{item.by}}</a>&nbsp;|&nbsp;</span><span><a href="{{storyUrl(item.id)}}" target="_blank"><span>{{item.descendants}}</span>&nbsp;comments</span></div>
+            <div class="secondary">
+                <span>by&nbsp;</span>
+                <a href="{{userUrl(item.by)}}" target="_blank">{{item.by}}</a>
+                <span>&nbsp;|&nbsp;</span>
+                <a href="{{storyUrl(item.id)}}" target="__blank">{{item.descendants}}</a>
+                <span>&nbsp;comments</span>
+            </div>
           </div>
         </paper-item-body>
       </paper-item>
