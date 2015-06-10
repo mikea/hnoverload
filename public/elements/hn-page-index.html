@@ -2,6 +2,7 @@
 <link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="/bower_components/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="/bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="/bower_components/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/bower_components/paper-toggle-button/paper-toggle-button.html">
@@ -28,17 +29,34 @@
         font-family: 'Roboto Condensed';
         font-weight: 300;
       }
+      
+      paper-toolbar.tall {
+        height: 100px;
+      }
+      
+      paper-tab {
+        width: 100px;
+      }
+      
+      paper-toolbar paper-tabs {
+        display: none;
+      }
+
+      paper-toolbar.tall paper-tabs {
+        display: flex;
+      }
     </style>
   <template>
-    <paper-header-panel main mode="standard" id="header" class="flex">
+    <paper-header-panel main mode="waterfall-tall" id="header" class="flex">
         <paper-toolbar>
           <h1 id="title">HN Overload</h1>
-          <div class="toggleLabel">votes&ensp;</div>
-          <paper-toggle-button checked="{{sortingChecked}}"></paper-toggle-button>
-          <div class="toggleLabel">&ensp;comments</div>
+          <paper-tabs class="bottom self-end" selected="{{tabSelection}}">
+            <paper-tab>By Votes</paper-tab>
+            <paper-tab>By Comments</paper-tab>
+          </paper-tabs>
         </paper-toolbar>
         <div id="content">
-          <hn-digest sorting="[[sorting]]" id="digest"></hn-digest>    
+          <hn-digest sorting="[[sorting(tabSelection)]]" id="digest"></hn-digest>    
         </div>
     </paper-header-panel>
   </template>
@@ -49,15 +67,16 @@
     is: "hn-page-index",
     
     properties: {
-        sortingChecked: Boolean,
-        sorting: {
-            type: String,
-            computed: 'computeSorting(sortingChecked)'
+        tabSelection: {
+          type: Number,
+          value: 0
         }
     },
     
-    computeSorting: function(sortingChecked) {
-        return sortingChecked ? "comments" : "score";
+    sorting: function(tabSelection) {
+      console.log("*** sorting: tabSelection", tabSelection);
+      var ts = "" + tabSelection;
+      return ts != "0" ? "comments" : "score";
     }
     
   });

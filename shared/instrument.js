@@ -33,17 +33,18 @@
                             
                         }, 
                         function (err, response, body) { 
-                        if (err) {
-                            console.error("error posting instrumentation", err);
-                            return;
-                        }
-                        
-                        if (response.statusCode != 200) {
-                            console.error("error posting instrumentation", response.statusCode, body);
-                            return;
-                        }
-
-                        console.log("posted %d events", evts.length);
+                            // todo: add retries here.
+                            if (err) {
+                                console.error("error posting instrumentation", err);
+                                return;
+                            }
+                            
+                            if (response.statusCode != 200) {
+                                console.error("error posting instrumentation", response.statusCode, body);
+                                return;
+                            }
+    
+                            console.log("posted %d events", evts.length);
                     });
                 }
             })
