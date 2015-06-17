@@ -18,7 +18,7 @@
       }
       
       #title {
-        flex-grow: 1;
+        margin-right: 1em;
       }
       
       #content {
@@ -30,27 +30,32 @@
         font-weight: 300;
       }
       
-      paper-toolbar.tall {
-        height: 100px;
+      /*paper-toolbar.tall {*/
+      /*  height: 100px;*/
+      /*}*/
+      
+      paper-tabs {
+        /*height: 100%;*/
+        /*align-self: flex-end;*/
       }
       
       paper-tab {
         width: 100px;
       }
       
-      paper-toolbar paper-tabs {
-        display: none;
-      }
+      /*paper-toolbar paper-tabs {*/
+      /*  display: none;*/
+      /*}*/
 
-      paper-toolbar.tall paper-tabs {
-        display: flex;
-      }
+      /*paper-toolbar.tall paper-tabs {*/
+      /*  display: flex;*/
+      /*}*/
     </style>
   <template>
-    <paper-header-panel main mode="waterfall-tall" id="header" class="flex">
+    <paper-header-panel main mode="waterfall" id="header" class="flex">
         <paper-toolbar>
-          <h1 id="title">HN Overload</h1>
-          <paper-tabs class="bottom self-end" selected="{{tabSelection}}">
+          <h1 id="title">HN Overload</h1>&nbsp;
+          <paper-tabs selected="{{tabSelection}}" alignbottom>
             <paper-tab>By Votes</paper-tab>
             <paper-tab>By Comments</paper-tab>
           </paper-tabs>
