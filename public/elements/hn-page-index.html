@@ -13,6 +13,11 @@
 
 <dom-module id="hn-page-index">
     <style>
+    
+      #dailyTabs {
+        --paper-tabs-selection-bar-color: var(--paper-orange-a200);
+      }
+      
       #header {
         flex-grow: 1;
       }
@@ -35,6 +40,7 @@
       /*}*/
       
       paper-tabs {
+        margin-right: 2em;
         /*height: 100%;*/
         /*align-self: flex-end;*/
       }
@@ -55,13 +61,17 @@
     <paper-header-panel main mode="waterfall" id="header" class="flex">
         <paper-toolbar>
           <h1 id="title">HN Overload</h1>&nbsp;
-          <paper-tabs selected="{{tabSelection}}" alignbottom>
+          <!--<paper-tabs selected="{{dailySelection}}" alignbottom id="dailyTabs">-->
+          <!--  <paper-tab>Daily</paper-tab>-->
+          <!--  <paper-tab>Weekly</paper-tab>-->
+          <!--</paper-tabs>-->
+          <paper-tabs selected="{{sortingSelection}}" alignbottom>
             <paper-tab>By Votes</paper-tab>
             <paper-tab>By Comments</paper-tab>
           </paper-tabs>
         </paper-toolbar>
         <div id="content">
-          <hn-digest sorting="[[sorting(tabSelection)]]" id="digest"></hn-digest>    
+          <hn-digest sorting="[[sorting(sortingSelection)]]" id="digest"></hn-digest>    
         </div>
     </paper-header-panel>
   </template>
@@ -72,16 +82,20 @@
     is: "hn-page-index",
     
     properties: {
-        tabSelection: {
+        sortingSelection: {
+          type: Number,
+          value: 0
+        },
+        dailySelection: {
           type: Number,
           value: 0
         }
     },
     
-    sorting: function(tabSelection) {
-      console.log("*** sorting: tabSelection", tabSelection);
-      var ts = "" + tabSelection;
-      return ts != "0" ? "comments" : "score";
+    sorting: function(sortingSelection) {
+      console.log("*** sorting: sortingSelection", sortingSelection);
+      var s = "" + sortingSelection;
+      return s != "0" ? "comments" : "score";
     }
     
   });
