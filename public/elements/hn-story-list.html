@@ -6,6 +6,7 @@
 <dom-module id="hn-story-list">
   <style>
     #line1, #line2 {
+      display: -weblot=flex;
       display: flex;
     }
     
@@ -41,7 +42,7 @@
     <template is="dom-repeat" items="{{stories}}">
       <div id="story">
         <div id="line1">
-            <span class="score">{{item.score}}</span>&ensp;<span><a href="{{item.url}}" target="_blank">{{item.title}}</a></span>
+            <span class="score">{{item.score}}</span>&ensp;<span><a href="{{itemUrl(item)}}" target="_blank">{{item.title}}</a></span>
         </div>
         <div id="line2">
           <span class="score">&nbsp;</span>&ensp;<span id="line2content"><span>by&nbsp;</span><!--
@@ -69,6 +70,10 @@
 
     userUrl: function(userId) {
       return "https://news.ycombinator.com/user?id=" + userId;
+    },
+    
+    itemUrl: function(item) {
+      return item.url || this.storyUrl(item.id);
     }
 
   });
