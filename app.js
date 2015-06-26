@@ -99,7 +99,7 @@ app.get('/rss', function(req, res) {
             function(item) {
                 var hnlink = "https://news.ycombinator.com/item?id=" + item.id;
                 var description = "<p>HN Score: " + item.score + "</p>" +
-                    "<p>HN Comments: <a href=\"" + hnlink + (item.descendants || 0) + "\"></p>";
+                    "<p>HN Comments: <a href=\"" + hnlink + "\">" +  (item.descendants || 0) + "</a></p>";
 
                 var item = {
                     title: item.title,
@@ -109,7 +109,6 @@ app.get('/rss', function(req, res) {
                     guid: hnlink,
                     author: item.by
                 };
-                console.log(item);
                 feed.items.push(item);
             },
             null,
