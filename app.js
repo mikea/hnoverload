@@ -47,6 +47,8 @@ var rxhnfb = new RxFirebase(hnFirebase);
 var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
 var rxfb = new RxFirebase(firebase);
 
+var instrument = new Instrument("/mike/hnoverload", process.env.instrument_url);
+
 app.get('/rss', function(req, res) {
     var feed = rss.createNewFeed('HN Overload', 'https://hnoverload.herokuapp.com/',
         'Daily Top 10 HackerNews Posts',
@@ -54,6 +56,9 @@ app.get('/rss', function(req, res) {
         'https://hnoverload.herokuapp.com/rss', {});
 
     res.set('Content-Type', 'application/rss+xml');
+    instrument.increment("/get", {
+        "url": "/rss"
+    });
     rxfb.child("dates")
         .limitToLast(11)
         .once("value")
@@ -132,8 +137,6 @@ app.use(function(err, req, res, next) {
         error: app.get('env') === 'development' ? err : {}
     });
 });
-
-var instrument = new Instrument("/mike/hnoverload", process.env.instrument_url);
 
 // Firebase.enableLogging(true);
 
