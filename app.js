@@ -18,6 +18,8 @@ var Instrument = require("./shared/instrument");
 
 var app = express();
 
+var DEV = app.get('env') === 'development';
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -43,7 +45,8 @@ app.get('/ping', function(req, res) {
 
 var hnfb = new RxFirebase(new Firebase("https://hacker-news.firebaseio.com/v0/"));
 
-var firebase = new Firebase("https://sweltering-heat-9449.firebaseio.com");
+var firebaseURL = DEV ? "https://hnoverload-dev.firebaseio.com" : "https://sweltering-heat-9449.firebaseio.com";
+var firebase = new Firebase(firebaseURL);
 var rxfb = new RxFirebase(firebase);
 
 var instrument = new Instrument("/mike/hnoverload", process.env.instrument_url);
@@ -148,92 +151,57 @@ function updateStory(storyId) {
         "task": "updateStory"
     });
 
-    function _updateStory(story) {
-        if (!story) {
-            throw new Error("null story");
-        }
-
-        if (!_.has(story, "time")) {
-            instrument.increment("/errors", {
-                "error": "story-time-not-defined"
-            });
-            throw new Error("time is not defined");
-        }
-
-
-        var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
-
-        if (_.has(story, "parent")) {
-            instrument.increment("/events", {
-                "event": "ignore-child-story"
-            });
-            return;
-        }
-
-        if (_.has(story, "deleted") && story.deleted) {
-            instrument.increment("/events", {
-                "event": "story-deleted"
-            });
-            firebase.child(item_location).remove();
-            return;
-        }
-
-        firebase.child(item_location).set(story);
-
-        // bump max item id  
-        instrument.increment("/events", {
-            "event": "story-update"
-        });
-        firebase.child("maxitem").transaction(function(currentValue) {
-            currentValue = currentValue || storyId;
-            return currentValue < storyId ? storyId : currentValue;
-        });
-    }
-
-    return hnfb.child("item/" + storyId)
+    return hnfb
+        .child("item/" + storyId)
         .once("value")
         .map(function(snapshot) {
-            _updateStory(snapshot.val());
+            if (!snapshot.exists()) {
+                console.log("null story ", storyId);
+                throw new Error("null story");
+            }
+            return snapshot.val();
+        })
+        .doOnNext(function(story) {
+            if (!_.has(story, "time")) {
+                instrument.increment("/errors", {
+                    "error": "story-time-not-defined"
+                });
+                throw new Error("time is not defined");
+            }
+
+            var item_location = "story_by_date/" + new Date(story.time * 1000).toISOString().substring(0, 10) + "/" + storyId;
+
+            if (_.has(story, "parent")) {
+                instrument.increment("/events", {
+                    "event": "ignore-child-story"
+                });
+                return;
+            }
+
+            if (_.has(story, "deleted") && story.deleted) {
+                instrument.increment("/events", {
+                    "event": "story-deleted"
+                });
+                firebase.child(item_location).remove();
+                return;
+            }
+
+            firebase.child(item_location).set(story);
+
+            // bump max item id  
+            instrument.increment("/events", {
+                "event": "story-update"
+            });
+            firebase.child("maxitem").transaction(function(currentValue) {
+                currentValue = currentValue || storyId;
+                return currentValue < storyId ? storyId : currentValue;
+            });
         });
-
-    // rxfb.child("errors/" + storyId)
-    //     .once("value")
-    //     .map(function(snapshot) {
-    //         return snapshot.val() || 0;
-    //     })
-    //     .filter(function(errorCount) {
-    //         if (errorCount >= 10) {
-    //             instrument.increment("/errors", {
-    //                 "error": "story-abandoned-too-many-errors"
-    //             });
-    //             console.log("abandoning story, too many errors: " + storyId);
-    //             return false;
-    //         }
-
-    //         return true;
-    //     })
-    //     // fetch story
-    //     .flatMap(function(errorCount) {
-    //         return hnfb.child("item/" + storyId).once("value");
-    //     })
-    //     // unwrap snapshot
-    //     .map(function(snapshot) {
-    //         return snapshot.val();
-    //     })
-    //     .doOnError(function(err) {
-    //         instrument.increment("/errors", {
-    //             "error": "story-unexpected-error"
-    //         });
-    //     })
-    //     .onErrorResumeNext(Rx.Observable.empty())
-    //     // update story
-    //     .subscribeOnNext(function(story) {
-    //         _updateStory(story);
-    //     });
 }
 
 function scheduleTask(name, payload, fn) {
-    firebase.child("tasks")
+    firebase
+        .child("tasks")
         .push({
             name: name,
             payload: payload,
@@ -246,7 +214,8 @@ function executeTask(key, task) {
         "task": task.name
     });
 
-    Rx.Observable.just(task)
+    Rx.Observable
+        .just(task)
         .flatMap(function(task) {
             try {
                 var payload = task.payload;
@@ -318,12 +287,16 @@ function watchNewStories(minStoryId) {
             });
             var maxId = snapshot.val();
             console.log("new maxvalue: " + maxId);
-            for (var i = lastStoryId + 1; i <= maxId; i++) {
-                scheduleTask("updateStory", {
-                    id: i
-                }, function(payload) {
-                    return updateStory(payload.id);
-                })
+            if (lastStoryId) {
+                for (var i = lastStoryId + 1; i <= maxId; i++) {
+                    setTimeout(function() {
+                        scheduleTask("updateStory", {
+                            id: i
+                        }, function(payload) {
+                            return updateStory(payload.id);
+                        })
+                    }, 1000 * 60    );
+                }
             }
             lastStoryId = maxId;
         });
@@ -383,25 +356,23 @@ function every1hr() {
 rxfb.child("maxitem")
     .once("value")
     .map(function(snapshot) {
-        return snapshot.val() || 9600000;
+        return snapshot.val()/* || 9700000*/;
     })
     .doOnError(logError)
     .subscribeOnNext(function(maxid) {
+        console.log("watching stories from " + maxid);
         watchNewStories(maxid);
     });
 
-// for (var i = 9600000; i > 9600000 - 20000; i--) {
-//   updateStory(i);
-// }
-
-
 setInterval(scheduleTask, 1000 * 60 * 1, "retryErrorTasks", {}, retryErrorTasks);
 setInterval(scheduleTask, 1000 * 60 * 15, "every15min", {}, every15min);
-// every15min();
 setInterval(scheduleTask, 1000 * 60 * 60, "every1hr", {}, every1hr);
+retryErrorTasks();
 
 instrument.increment("/lifecycle", {
     "event": "start"
 });
 
 module.exports = app;
+
+console.log("Application started with " + firebaseURL);
