@@ -375,4 +375,4 @@ instrument.increment("/lifecycle", {
 
 module.exports = app;
 
-console.log("Application started with " + firebaseURL);
+console.log("Application started with " + firebaseURL, "environment: " + app.get('env'));
