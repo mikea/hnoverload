@@ -114,7 +114,7 @@ app.get('/rss', function(req, res) {
                     pubDate: new Date(item.time * 1000).toUTCString(),
                     description: description,
                     guid: hnlink,
-                    author: item.by
+                    "dc:creator": item.by
                 };
                 feed.items.push(item);
             },
