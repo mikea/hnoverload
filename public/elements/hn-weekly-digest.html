@@ -1,0 +1,85 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="hn-story-list.html">
+
+<dom-module id="hn-weekly-digest">
+  <template>
+    <h2>Week</h2>
+    <hn-story-list stories="[[stories]]"></hn-story-list>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is: "hn-weekly-digest",
+
+    properties: {
+      sorting: String,
+      stories: Array
+    },
+
+    created: function() {
+      var self = this;
+
+      var firebase = new RxFirebase(new Firebase("https://sweltering-heat-9449.firebaseio.com"));
+      firebase.child("dates")
+              .limitToLast(7)
+              .on("value")
+              .map(function(snapshot) {return snapshot.val();})
+              .filter(function(dates) { return dates; })
+              .map(function(dates) { return _.chain(dates).keys().reverse().value(); })
+              .flatMap(function (dates) {
+                  return Rx.Observable
+                      .from(dates)
+                      .flatMap(function(date) {
+                          return firebase
+                              .child("story_by_date/" + date)
+                              .once("value")
+                              .flatMap(function (snapshot) {
+                                var storiesMap = snapshot.val();
+                                if (!storiesMap) {
+                                  return [];
+                                }
+
+                                var allStories = _.chain(storiesMap)
+                                                  .keys()
+                                                  .map(function (key) { return storiesMap[key]; })
+                                                  .filter(function (story) { return !story.deleted; })
+                                                  .toArray()
+                                                  .value();
+
+                                var sortingFn = self.sorting == "comments"
+                                  ? function(story) { return -(story.descendants || 0); }
+                                  : function(story) { return -story.score; };
+
+                                var stories = _.chain(allStories)
+                                               .sortBy(sortingFn)
+                                               .first(100)
+                                               .toArray()
+                                               .value();
+
+                                return stories;
+                              });
+                      })
+                      .toArray()
+                      ;
+              })
+              .map(function (stories) {
+                console.log("stories", stories);
+                var sortingFn = self.sorting == "comments"
+                  ? function(story) { return -(story.descendants || 0); }
+                  : function(story) { return -story.score; };
+
+                  return _.chain(stories)
+                          .sortBy(sortingFn)
+                          .first(100)
+                          .toArray()
+                          .value();
+              })
+              .forEach(function(stories) {
+                console.log("stories", stories);
+                self.stories = stories; });
+    }
+  });
+</script>
