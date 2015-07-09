@@ -33,6 +33,10 @@
             };
 
             self.fb.once(eventType, cb, ecb);
+
+            return Rx.Disposable.create(function() {
+                self.fb.off(eventType, cb);
+            });
         });
     };
 
@@ -54,6 +58,7 @@
                 observer.onError(data);
             };
             self.fb.on(eventType, cb, ecb);
+
             return Rx.Disposable.create(function() {
                 self.fb.off(eventType, cb);
             });
@@ -62,6 +67,51 @@
 
     RxFirebase.prototype.limitToLast = function(limit) {
         return new RxFirebase(this.fb.limitToLast(limit));
+    }
+
+    RxFirebase.prototype.push = function(data) {
+        var self = this;
+
+        return Rx.Observable.create(function(observer) {
+            var cb = function(error) {
+                if (error) {
+                    observer.onError(error);
+                } else {
+                    observer.onCompleted();
+                }
+            };
+            self.fb.push(data, cb);
+        });
+    }
+
+    RxFirebase.prototype.set = function(data) {
+        var self = this;
+
+        return Rx.Observable.create(function(observer) {
+            var cb = function(error) {
+                if (error) {
+                    observer.onError(error);
+                } else {
+                    observer.onCompleted();
+                }
+            };
+            self.fb.set(data, cb);
+        });
+    }
+
+    RxFirebase.prototype.remove = function() {
+        var self = this;
+
+        return Rx.Observable.create(function(observer) {
+            var cb = function(error) {
+                if (error) {
+                    observer.onError(error);
+                } else {
+                    observer.onCompleted();
+                }
+            };
+            self.fb.remove(cb);
+        });
     }
 
     if (isInNode) {

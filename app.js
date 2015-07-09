@@ -146,6 +146,21 @@ function logError(error) {
     console.log("*** UNHANDLED ERROR", error);
 }
 
+function loggingObserver(prefix) {
+    return Rx.Observer.create(
+        function(x) {
+            console.log(prefix, 'Do Next: ', x);
+        },
+        function(err) {
+            console.log(prefix, 'Do Error: ', err);
+        },
+        function() {
+            console.log(prefix, 'Do Completed');
+        }
+    );
+
+}
+
 function updateStory(storyId) {
     instrument.increment("/tasks", {
         "task": "updateStory"
@@ -161,7 +176,7 @@ function updateStory(storyId) {
             }
             return snapshot.val();
         })
-        .doOnNext(function(story) {
+        .map(function(story) {
             if (!_.has(story, "time")) {
                 instrument.increment("/errors", {
                     "error": "story-time-not-defined"
@@ -175,7 +190,7 @@ function updateStory(storyId) {
                 instrument.increment("/events", {
                     "event": "ignore-child-story"
                 });
-                return;
+                return story;
             }
 
             if (_.has(story, "deleted") && story.deleted) {
@@ -183,12 +198,12 @@ function updateStory(storyId) {
                     "event": "story-deleted"
                 });
                 firebase.child(item_location).remove();
-                return;
+                return story;
             }
 
             firebase.child(item_location).set(story);
 
-            // bump max item id  
+            // bump max item id
             instrument.increment("/events", {
                 "event": "story-update"
             });
@@ -196,11 +211,13 @@ function updateStory(storyId) {
                 currentValue = currentValue || storyId;
                 return currentValue < storyId ? storyId : currentValue;
             });
+
+            return story;
         });
 }
 
 function scheduleTask(name, payload, fn) {
-    firebase
+    return rxfb
         .child("tasks")
         .push({
             name: name,
@@ -210,18 +227,20 @@ function scheduleTask(name, payload, fn) {
 }
 
 function executeTask(key, task) {
-    instrument.increment("/tasks", {
-        "task": task.name
-    });
-
-    Rx.Observable
+    return Rx.Observable
         .just(task)
+        .map(function(task) {
+            instrument.increment("/tasks", {
+                "task": task.name
+            });
+            return task;
+        })
         .flatMap(function(task) {
             try {
                 var payload = task.payload;
                 var fn = eval("(" + task.fn + ")");
-                var o = fn(payload);
-                return o || Rx.Observable.empty();
+                var observable = fn(payload) || Rx.Observable.empty();
+                return observable;
             } catch (e) {
                 return Rx.Observable.throw(e);
             }
@@ -241,8 +260,7 @@ function executeTask(key, task) {
                     return task;
                 });
         })
-        .onErrorResumeNext(Rx.Observable.empty())
-        .subscribe();
+        .onErrorResumeNext(Rx.Observable.empty());
 }
 
 rxfb.child("tasks")
@@ -253,25 +271,33 @@ rxfb.child("tasks")
     .filter(function(tuple) {
         return !tuple[1].errors;
     })
-    .forEach(function(tuple) {
-        executeTask(tuple[0], tuple[1]);
-    });
+    .concatMap(function(tuple) {
+        return executeTask(tuple[0], tuple[1]);
+    })
+    .subscribe();
+
 
 function retryErrorTasks() {
-    console.log("retrying tasks");
-    rxfb.child("tasks")
+    return rxfb.child("tasks")
         .once("value")
         .flatMap(function(snapshot) {
             return _.pairs(snapshot.val());
         })
-        // .map(function(snapshot) {
-        //     return [snapshot.key(), snapshot.val()];
-        // })
         .filter(function(tuple) {
-            return tuple[1].errors && tuple[1].errors < 10;
+            return tuple[1].errors > 0;
         })
-        .forEach(function(tuple) {
-            executeTask(tuple[0], tuple[1]);
+        .flatMap(function(tuple) {
+            var key = tuple[0];
+            var task = tuple[1];
+
+            if (task.errors < 10) {
+                return executeTask(key, task);
+            } else {
+                return Rx.Observable.concat(
+                    rxfb.child("error_tasks/" + key).set(task),
+                    rxfb.child("tasks/" + key).remove()
+                );
+            }
         });
 }
 
@@ -286,17 +312,20 @@ function watchNewStories(minStoryId) {
                 "event": "maxitem.value"
             });
             var maxId = snapshot.val();
-            console.log("new maxvalue: " + maxId);
+            console.log("new maxvalue: ", maxId, lastStoryId);
             if (lastStoryId) {
-                for (var i = lastStoryId + 1; i <= maxId; i++) {
-                    setTimeout(function() {
-                        scheduleTask("updateStory", {
-                            id: i
+                Rx.Observable
+                    .range(lastStoryId + 1, maxId - lastStoryId)
+                    .concatMap(function(idx) {
+                        return scheduleTask("updateStory", {
+                            id: idx,
+                            tag: "watchNewStories"
                         }, function(payload) {
                             return updateStory(payload.id);
-                        })
-                    }, 1000 * 60    );
-                }
+                        });
+
+                    })
+                    .subscribe();
             }
             lastStoryId = maxId;
         });
@@ -309,7 +338,8 @@ function updateDate(date) {
     console.log("*** updating stories for " + date);
     firebase.child("dates/" + date).set(true);
 
-    rxfb.child("story_by_date/" + date)
+    return rxfb
+        .child("story_by_date/" + date)
         .once("value")
         .filter(function(snapshot) {
             return snapshot.val();
@@ -317,9 +347,10 @@ function updateDate(date) {
         .flatMap(function(snapshot) {
             return Object.keys(snapshot.val())
         })
-        .forEach(function(id) {
-            scheduleTask("updateStory", {
-                id: id
+        .flatMap(function(id) {
+            return scheduleTask("updateStory", {
+                id: id,
+                tag: "updateDate"
             }, function(payload) {
                 return updateStory(payload.id);
             })
@@ -330,11 +361,13 @@ function updateDateRange(from, to) {
     var d = new Date();
     d.setHours(0, 0, 0);
 
-    for (var i = 0; i < to; i++, d.setDate(d.getDate() - 1)) {
-        if (i >= from) {
-            updateDate(d.toISOString().substring(0, 10));
-        }
-    }
+    return Rx.Observable
+        .range(from, to - from)
+        .flatMap(function(dist) {
+            var oldDate = new Date(d);
+            oldDate.setDate(d.getDate() - dist);
+            return updateDate(d.toISOString().substring(0, 10)).subscribe();
+        });
 }
 
 function every15min() {
@@ -342,7 +375,7 @@ function every15min() {
         "event": "cron15m"
     });
     console.log("*** every15min");
-    updateDateRange(0, 1);
+    return updateDateRange(0, 1);
 }
 
 function every1hr() {
@@ -350,13 +383,13 @@ function every1hr() {
         "event": "cron1h"
     });
     console.log("*** every1hr");
-    updateDateRange(1, 7);
+    return updateDateRange(1, 7);
 }
 
 rxfb.child("maxitem")
     .once("value")
     .map(function(snapshot) {
-        return snapshot.val()/* || 9700000*/;
+        return snapshot.val() /* || 9700000*/ ;
     })
     .doOnError(logError)
     .subscribeOnNext(function(maxid) {
@@ -364,10 +397,28 @@ rxfb.child("maxitem")
         watchNewStories(maxid);
     });
 
-setInterval(scheduleTask, 1000 * 60 * 1, "retryErrorTasks", {}, retryErrorTasks);
-setInterval(scheduleTask, 1000 * 60 * 15, "every15min", {}, every15min);
-setInterval(scheduleTask, 1000 * 60 * 60, "every1hr", {}, every1hr);
-retryErrorTasks();
+Rx.Observable
+    .interval(1000 * 60 * 1)
+    .flatMap(function() {
+        return scheduleTask("retryErrorTasks", {}, retryErrorTasks);
+    })
+    .subscribe();
+
+Rx.Observable
+    .interval(1000 * 60 * 15)
+    .flatMap(function() {
+        return scheduleTask("every15min", {}, every15min);
+    })
+    .subscribe();
+
+Rx.Observable
+    .interval(1000 * 60 * 60)
+    .flatMap(function() {
+        return scheduleTask("every1hr", {}, every1hr);
+    })
+    .subscribe();
+
+retryErrorTasks().subscribe();
 
 instrument.increment("/lifecycle", {
     "event": "start"
