@@ -366,7 +366,7 @@ function updateDateRange(from, to) {
         .flatMap(function(dist) {
             var oldDate = new Date(d);
             oldDate.setDate(d.getDate() - dist);
-            return updateDate(d.toISOString().substring(0, 10)).subscribe();
+            return updateDate(d.toISOString().substring(0, 10));
         });
 }
 
@@ -417,8 +417,6 @@ Rx.Observable
         return scheduleTask("every1hr", {}, every1hr);
     })
     .subscribe();
-
-retryErrorTasks().subscribe();
 
 instrument.increment("/lifecycle", {
     "event": "start"
