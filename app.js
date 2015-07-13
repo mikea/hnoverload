@@ -35,6 +35,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/bower_components', express.static(path.join(__dirname, 'bower_components')));
 app.use('/shared', express.static(path.join(__dirname, 'shared')));
+app.use('/weekly', express.static(path.join(__dirname, 'public/weekly.html')));
 
 // app.use('/', routes);
 app.use('/users', users);

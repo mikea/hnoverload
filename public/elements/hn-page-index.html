@@ -13,42 +13,42 @@
 
 <dom-module id="hn-page-index">
     <style>
-    
+
       #dailyTabs {
         --paper-tabs-selection-bar-color: var(--paper-orange-a200);
       }
-      
+
       #header {
         flex-grow: 1;
       }
-      
+
       #title {
         margin-right: 1em;
       }
-      
+
       #content {
         padding-left: 16px;
       }
-      
+
       .toggleLabel {
         font-family: 'Roboto Condensed';
         font-weight: 300;
       }
-      
+
       /*paper-toolbar.tall {*/
       /*  height: 100px;*/
       /*}*/
-      
+
       paper-tabs {
         margin-right: 2em;
         /*height: 100%;*/
         /*align-self: flex-end;*/
       }
-      
+
       paper-tab {
         width: 100px;
       }
-      
+
       /*paper-toolbar paper-tabs {*/
       /*  display: none;*/
       /*}*/
@@ -60,7 +60,7 @@
   <template>
     <paper-header-panel main mode="waterfall" id="header" class="flex">
         <paper-toolbar>
-          <h1 id="title">HN Overload</h1>&nbsp;
+          <h1 id="title">HN Daily</h1>&nbsp;
           <!--<paper-tabs selected="{{dailySelection}}" alignbottom id="dailyTabs">-->
           <!--  <paper-tab>Daily</paper-tab>-->
           <!--  <paper-tab>Weekly</paper-tab>-->
@@ -71,7 +71,7 @@
           </paper-tabs>
         </paper-toolbar>
         <div id="content">
-          <hn-digest sorting="[[sorting(sortingSelection)]]" id="digest"></hn-digest>    
+          <hn-digest sorting="[[sorting(sortingSelection)]]" id="digest"></hn-digest>
         </div>
     </paper-header-panel>
   </template>
@@ -80,7 +80,7 @@
 <script>
   Polymer({
     is: "hn-page-index",
-    
+
     properties: {
         sortingSelection: {
           type: Number,
@@ -91,12 +91,12 @@
           value: 0
         }
     },
-    
+
     sorting: function(sortingSelection) {
       console.log("*** sorting: sortingSelection", sortingSelection);
       var s = "" + sortingSelection;
       return s != "0" ? "comments" : "score";
     }
-    
+
   });
 </script>
