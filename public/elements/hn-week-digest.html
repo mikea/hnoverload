@@ -1,0 +1,47 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="hn-dates-digest.html">
+
+<dom-module id="hn-week-digest">
+  <template>
+    <h2>[[ formatDate(startDate) ]]</h2>
+    <hn-dates-digest dates="[[ dates ]]" sorting="[[ sorting ]]" length="[[ length ]]"></hn-story-list>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is: "hn-week-digest",
+
+    properties: {
+      sorting: String,
+      startDate: Object,
+      dates: {
+        type: Array,
+        computed: "computeDates(startDate)"
+      },
+      length: {
+        type: Number,
+        value: 10
+      }
+
+    },
+
+    formatDate: function(date) {
+      return date.toISOString().substring(0, 10);
+    }
+
+    , computeDates: function(startDate) {
+      console.log("computeDates", startDate);
+
+      return _.chain(_.range(7))
+              .map(function (delta) {
+                var d = new Date(startDate);
+                d.setDate(d.getDate() + delta);
+                return d;
+              })
+              .value();
+    }
+  });
+</script>
