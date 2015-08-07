@@ -106,8 +106,8 @@ app.get('/rss', function(req, res) {
         .forEach(
             function(item) {
                 var hnlink = "https://news.ycombinator.com/item?id=" + item.id;
-                var description = "<p>HN Score: " + item.score + "</p>" +
-                    "<p>HN Comments: <a href=\"" + hnlink + "\">" + (item.descendants || 0) + "</a></p>";
+                var description = "<h1>Score: " + item.score +
+                    "Comments: <a href=\"" + hnlink + "\">" + (item.descendants || 0) + "</a></h1>";
 
                 var item = {
                     title: item.title,
