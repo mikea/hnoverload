@@ -1,24 +1,26 @@
 // run debug: DEBUG=hnoverload:* npm start
 
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var _ = require('underscore');
-var Rx = require('rx');
-var rss = require('node-rss');
+const express = require('express');
+const path = require('path');
+const favicon = require('serve-favicon');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const _ = require('underscore');
+const Rx = require('rx');
+const rss = require('node-rss');
 
-var routes = require('./routes/index');
-var users = require('./routes/users');
-var Firebase = require("firebase");
-var RxFirebase = require("./shared/rxfirebase");
-var Instrument = require("./shared/instrument");
+const routes = require('./routes/index');
+const users = require('./routes/users');
+const Firebase = require("firebase");
+const http = require("http");
+const RxFirebase = require("./shared/rxfirebase");
+const Instrument = require("./shared/instrument");
+const request = require("request")
 
-var app = express();
+const app = express();
 
-var DEV = app.get('env') === 'development';
+const DEV = app.get('env') === 'development';
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -51,6 +53,14 @@ var firebase = new Firebase(firebaseURL);
 var rxfb = new RxFirebase(firebase);
 
 var instrument = new Instrument("/mike/hnoverload", process.env.instrument_url);
+
+var readabilityKey = process.env.readability_key;
+
+if (!readabilityKey) {
+    throw new Error("readability_key env variable not defined");
+} else {
+    console.info("Using readability_key", readabilityKey);
+}
 
 app.get('/rss', function(req, res) {
     var feed = rss.createNewFeed('HN Overload', 'https://hnoverload.herokuapp.com/',
@@ -109,6 +119,10 @@ app.get('/rss', function(req, res) {
                 var description = "<h1>Score: " + item.score +
                     "Comments: <a href=\"" + hnlink + "\">" + (item.descendants || 0) + "</a></h1>";
 
+                if (_.has(item, "readability") && _.has(item.readability, "content")) {
+                  description += item.readability.content;
+                }
+
                 var item = {
                     title: item.title,
                     link: item.url || hnlink,
@@ -162,6 +176,21 @@ function loggingObserver(prefix) {
 
 }
 
+function rxHttpRequest(options) {
+    return Rx.Observable.create(observer => {
+        const cb = (error, response, body) => {
+            if (error) {
+                observer.onError(error);
+                return;
+            }
+            observer.onNext(body);
+            observer.onCompleted();
+        };
+        request(options, cb);
+    });
+
+}
+
 function updateStory(storyId) {
     instrument.increment("/tasks", {
         "task": "updateStory"
@@ -170,15 +199,15 @@ function updateStory(storyId) {
     return hnfb
         .child("item/" + storyId)
         .once("value")
-        .map(function(snapshot) {
+        .map(snapshot => {
             if (!snapshot.exists()) {
                 console.log("null story ", storyId);
                 throw new Error("null story");
             }
             return snapshot.val();
         })
-        .map(function(story) {
-            if (!_.has(story, "time")) {
+        .map(story => {
+             if (!_.has(story, "time")) {
                 instrument.increment("/errors", {
                     "error": "story-time-not-defined"
                 });
@@ -202,16 +231,34 @@ function updateStory(storyId) {
                 return story;
             }
 
-            firebase.child(item_location).set(story);
+            console.log("***", item_location);
+            rxfb.child(item_location)
+                .once("value")
+                .map(snapshot => snapshot.val() || {})
+                .map(oldStory => _.extend(oldStory, story))
+                .map(story => _.omit(story, "kids"))
+                .flatMap(story => {
+                    if (story.readability || (story.score || 0) < 50) {
+                        return [story];
+                    }
+                    console.log("fetching readability", story.id);
+                    return rxHttpRequest({
+                        url: "https://readability.com/api/content/v1/parser?url=" + encodeURIComponent(story.url) + "&token=" + encodeURIComponent(readabilityKey),
+                        json: true})
+                        .map(response => _.extend(story, {"readability": response}));
+                })
+                .forEach(story => {
+                    firebase.child(item_location).set(story);
 
-            // bump max item id
-            instrument.increment("/events", {
-                "event": "story-update"
-            });
-            firebase.child("maxitem").transaction(function(currentValue) {
-                currentValue = currentValue || storyId;
-                return currentValue < storyId ? storyId : currentValue;
-            });
+                    // bump max item id
+                    instrument.increment("/events", {
+                        "event": "story-update"
+                    });
+                    firebase.child("maxitem").transaction(currentValue => {
+                        currentValue = currentValue || storyId;
+                        return currentValue < storyId ? storyId : currentValue;
+                    });
+                });
 
             return story;
         });
@@ -342,20 +389,12 @@ function updateDate(date) {
     return rxfb
         .child("story_by_date/" + date)
         .once("value")
-        .filter(function(snapshot) {
-            return snapshot.val();
-        })
-        .flatMap(function(snapshot) {
-            return Object.keys(snapshot.val())
-        })
-        .flatMap(function(id) {
-            return scheduleTask("updateStory", {
-                id: id,
-                tag: "updateDate"
-            }, function(payload) {
-                return updateStory(payload.id);
-            })
-        });
+        .filter(snapshot => snapshot.val())
+        .flatMap(snapshot=> Object.keys(snapshot.val()))
+        .flatMap(id =>  scheduleTask("updateStory",
+                                     { id: id, tag: "updateDate" },
+                                     payload =>  updateStory(payload.id))
+        );
 }
 
 function updateDateRange(from, to) {
@@ -364,7 +403,7 @@ function updateDateRange(from, to) {
 
     return Rx.Observable
         .range(from, to - from)
-        .flatMap(function(dist) {
+        .flatMap(dist => {
             var oldDate = new Date(d);
             oldDate.setDate(d.getDate() - dist);
             return updateDate(d.toISOString().substring(0, 10));
@@ -389,34 +428,26 @@ function every1hr() {
 
 rxfb.child("maxitem")
     .once("value")
-    .map(function(snapshot) {
-        return snapshot.val() /* || 9700000*/ ;
-    })
+    .map(snapshot =>  snapshot.val() /* || 9700000*/)
     .doOnError(logError)
-    .subscribeOnNext(function(maxid) {
+    .subscribeOnNext(maxid => {
         console.log("watching stories from " + maxid);
         watchNewStories(maxid);
     });
 
 Rx.Observable
     .interval(1000 * 60 * 1)
-    .flatMap(function() {
-        return scheduleTask("retryErrorTasks", {}, retryErrorTasks);
-    })
+    .flatMap(() => scheduleTask("retryErrorTasks", {}, retryErrorTasks))
     .subscribe();
 
 Rx.Observable
     .interval(1000 * 60 * 15)
-    .flatMap(function() {
-        return scheduleTask("every15min", {}, every15min);
-    })
+    .flatMap(() => scheduleTask("every15min", {}, every15min))
     .subscribe();
 
 Rx.Observable
     .interval(1000 * 60 * 60)
-    .flatMap(function() {
-        return scheduleTask("every1hr", {}, every1hr);
-    })
+    .flatMap(() =>  scheduleTask("every1hr", {}, every1hr))
     .subscribe();
 
 instrument.increment("/lifecycle", {
@@ -425,4 +456,6 @@ instrument.increment("/lifecycle", {
 
 module.exports = app;
 
-console.log("Application started with " + firebaseURL, "environment: " + app.get('env'));
+console.log("Application started with ", firebaseURL, "environment: " + app.get('env'));
+
+// updateStory(9981805).subscribe();
