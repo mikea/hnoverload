@@ -117,7 +117,7 @@ app.get('/rss', function(req, res) {
             function(item) {
                 var hnlink = "https://news.ycombinator.com/item?id=" + item.id;
                 var description = "<h1>Score: " + item.score +
-                    "Comments: <a href=\"" + hnlink + "\">" + (item.descendants || 0) + "</a></h1>";
+                    "&nbsp;Comments: <a href=\"" + hnlink + "\">" + (item.descendants || 0) + "</a></h1>";
 
                 if (_.has(item, "readability") && _.has(item.readability, "content")) {
                   description += item.readability.content;
