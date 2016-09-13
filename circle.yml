@@ -4,5 +4,6 @@ machine:
 
 dependencies:
   pre:
-    - sudo /opt/google-cloud-sdk/bin/gcloud components update
+    - sudo /opt/google-cloud-sdk/bin/gcloud -q components update
+    - sudo /opt/google-cloud-sdk/bin/gcloud -q install kubectl
     - docker build . 
