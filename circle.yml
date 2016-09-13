@@ -1,6 +1,10 @@
 machine:
   services:
     - docker
+  environment:
+    DOCKER_IMAGE_NAME: hnoverload
+    DOCKER_IMAGE_TAG: us.gcr.io/${GCLOUD_PROJECT_NAME}/${DOCKER_IMAGE_NAME}
+    GCLOUD_PROJECT_NAME: undefined
 
 dependencies:
   pre:
@@ -9,4 +13,11 @@ dependencies:
 
 test:
   post:
-    - docker build . 
+    - docker build . -t $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 .
+    - docker tag $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 $DOCKER_IMAGE_TAG:latest
+
+deployment:
+  prod:
+    branch: master
+    commands:
+      - gcloud docker push $DOCKER_IMAGE_TAG
