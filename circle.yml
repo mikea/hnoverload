@@ -13,8 +13,9 @@ dependencies:
 
 test:
   post:
-    - docker build . -t ${DOCKER_IMAGE_TAG}:${CIRCLE_SHA1} .
-    - docker tag ${DOCKER_IMAGE_TAG}:${CIRCLE_SHA1} ${DOCKER_IMAGE_TAG}:latest
+    - set
+    - docker build . -t $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 .
+    - docker tag $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 $DOCKER_IMAGE_TAG:latest
 
 deployment:
   prod:
