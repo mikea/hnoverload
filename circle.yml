@@ -1,0 +1,8 @@
+machine:
+  services:
+    - docker
+
+dependencies:
+  pre:
+    - sudo /opt/google-cloud-sdk/bin/gcloud components update
+    - docker build . 
