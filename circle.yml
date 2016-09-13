@@ -13,7 +13,7 @@ dependencies:
 
 test:
   post:
-    - set
+    - env
     - docker build . -t $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 .
     - docker tag $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 $DOCKER_IMAGE_TAG:latest
 
