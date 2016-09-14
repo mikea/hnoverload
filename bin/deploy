@@ -3,7 +3,6 @@
 DOCKER_IMAGE_NAME=$CIRCLE_PROJECT_REPONAME
 DOCKER_IMAGE_TAG="us.gcr.io/$GCLOUD_PROJECT_NAME/$DOCKER_IMAGE_NAME"
 GCLOUD="/opt/google-cloud-sdk/bin/gcloud"
-env
 
 sudo $GCLOUD -q config set project $GCLOUD_PROJECT_NAME
 sudo $GCLOUD -q config set container/cluster $GCLOUD_CLUSTER_NAME
