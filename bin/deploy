@@ -11,4 +11,4 @@ sudo $GCLOUD -q container clusters get-credentials $GCLOUD_CLUSTER_NAME
 
 docker build -t $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 .
 docker tag $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 $DOCKER_IMAGE_TAG:latest
-docker push $DOCKER_IMAGE_TAG
+sudo $GCLOUD docker push $DOCKER_IMAGE_TAG
