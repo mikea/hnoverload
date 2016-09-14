@@ -8,7 +8,7 @@ env
 sudo $GCLOUD -q config set project $GCLOUD_PROJECT_NAME
 sudo $GCLOUD -q config set container/cluster $GCLOUD_CLUSTER_NAME
 sudo $GCLOUD -q config set compute/zone $GCLOUD_COMPUTE_ZONE
-sudo $GCLOUD -q container clusters get-credentials $GLOUD_CLUSTER_NAME
+sudo $GCLOUD -q container clusters get-credentials $GCLOUD_CLUSTER_NAME
 
 docker build -t $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 .
 docker tag $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 $DOCKER_IMAGE_TAG:latest
