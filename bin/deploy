@@ -4,6 +4,12 @@ DOCKER_IMAGE_NAME=$CIRCLE_PROJECT_REPONAME
 DOCKER_IMAGE_TAG="us.gcr.io/$GCLOUD_PROJECT_NAME/$DOCKER_IMAGE_NAME"
 
 env
+
+gcloud -q config set project $GCLOUD_PROJECT_NAME
+gcloud -q config set container/cluster $GCLOUD_CLUSTER_NAME
+gcloud -q config set compute/zone $GCLOUD_COMPUTE_ZONE
+gcloud -quiet container clusters get-credentials $GLOUD_CLUSTER_NAME
+
 docker build -t $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 .
 docker tag $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 $DOCKER_IMAGE_TAG:latest
 docker push $DOCKER_IMAGE_TAG
