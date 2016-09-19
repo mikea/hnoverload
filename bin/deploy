@@ -1,14 +1,9 @@
 #!/bin/bash -eux
 
-DOCKER_IMAGE_NAME=$CIRCLE_PROJECT_REPONAME
-DOCKER_IMAGE_TAG="us.gcr.io/$GCLOUD_PROJECT_NAME/$DOCKER_IMAGE_NAME"
-GCLOUD="/opt/google-cloud-sdk/bin/gcloud"
-
 sudo $GCLOUD -q config set project $GCLOUD_PROJECT_NAME
 sudo $GCLOUD -q config set container/cluster $GCLOUD_CLUSTER_NAME
 sudo $GCLOUD -q config set compute/zone $GCLOUD_COMPUTE_ZONE
 sudo $GCLOUD -q container clusters get-credentials $GCLOUD_CLUSTER_NAME
 
-docker build -t $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 .
-docker tag $DOCKER_IMAGE_TAG:$CIRCLE_SHA1 $DOCKER_IMAGE_TAG:latest
-sudo $GCLOUD docker push $DOCKER_IMAGE_TAG
+docker tag $DOCKER_IMAGE:$CIRCLE_SHA1 $DOCKER_IMAGE:latest
+sudo $GCLOUD docker push $DOCKER_IMAGE

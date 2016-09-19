@@ -1,16 +1,19 @@
 machine:
   services:
     - docker
+  environment:
+    GCLOUD: /opt/google-cloud-sdk/bin/gcloud
 
 dependencies:
   pre:
-    - sudo /opt/google-cloud-sdk/bin/gcloud -q components update
-    - sudo /opt/google-cloud-sdk/bin/gcloud -q components install kubectl
+    - sudo $GCLOUD -q components update
+    - sudo $GCLOUD -q components install kubectl
     - echo $GCLOUD_SERVICE_KEY | base64 --decode > ${HOME}/gcloud-service-key.json
-    - sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
+    - sudo $GCLOUD auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
 
 deployment:
   prod:
     branch: master
     commands:
+      - docker build -t $DOCKER_IMAGE:$CIRCLE_SHA1 .
       - bin/deploy
