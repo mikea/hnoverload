@@ -408,7 +408,7 @@ function updateDateRange(from, to) {
         .flatMap(dist => {
             var oldDate = new Date(d);
             oldDate.setDate(d.getDate() - dist);
-            return updateDate(d.toISOString().substring(0, 10));
+            return updateDate(oldDate.toISOString().substring(0, 10));
         });
 }
 

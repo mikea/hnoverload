@@ -2,7 +2,7 @@
 
 Digest site for Hacker News. NodeJs + Firebase + Polymer + Rx.
 
-Deployed at https://hnoverload.herokuapp.com/
+Deployed at https://hnoverload.aizatsky.com/
 
 
 ## Building & Running
