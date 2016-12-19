@@ -54,12 +54,11 @@ var rxfb = new RxFirebase(firebase);
 
 var instrument = new Instrument("/mike/hnoverload", process.env.instrument_url);
 
-var readabilityKey = process.env.readability_key;
-
-if (!readabilityKey) {
-    throw new Error("readability_key env variable not defined");
+var mercuryKey = process.env.mercury_key;
+if (!mercuryKey) {
+    throw new Error("mercury_key env variable not defined");
 } else {
-    console.info("Using readability_key", readabilityKey);
+    console.info("Using mercuryKey", mercuryKey);
 }
 
 app.get('/rss', function(req, res) {
@@ -243,8 +242,11 @@ function updateStory(storyId) {
                     }
                     console.log("fetching readability", story.id);
                     return rxHttpRequest({
-                        url: "https://readability.com/api/content/v1/parser?url=" + encodeURIComponent(story.url) + "&token=" + encodeURIComponent(readabilityKey),
-                        json: true})
+                        url: "https://mercury.postlight.com/parser?url=" + encodeURIComponent(story.url),
+                        json: true,
+                        headers: {
+                            'x-api-key': encodeURIComponent(mercuryKey)
+                        }})
                         .map(response => _.extend(story, {"readability": response}));
                 })
                 .forEach(story => {
